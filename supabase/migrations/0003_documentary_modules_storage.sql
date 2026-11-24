@@ -208,7 +208,7 @@ create table if not exists public.contribution_rate_limits (
   updated_at timestamptz not null default now()
 );
 alter table public.contribution_rate_limits enable row level security;
-revoke all on public.contribution_rate_limits from anon, authenticated;
+revoke all on public.contribution_rate_limits from public, anon, authenticated;
 create or replace function public.consume_contribution_rate_limit(p_key_hash text, p_limit integer default 5, p_window_seconds integer default 900)
 returns boolean language plpgsql security definer set search_path = public as $$
 declare v_count integer;
