@@ -1,52 +1,39 @@
-# État d’implémentation — reprise fonctionnelle
+# État d’implémentation — reprise documentaire
 
-Cette branche constitue une première version connectée. Elle ne doit pas être ouverte au public avant application des migrations et tests sur une instance Supabase isolée.
+## Implémenté dans la branche `reprise/modules-documentaires`
+- Authentification Supabase, session et contrôle du profil avant l’accès à l’administration.
+- CMS initial : création et modification des dossiers, ajout de sources, modération des contributions.
+- Contrôle de vérification dédié au rôle fact_checker.
+- Site public connecté : contenus publiés, recherche, filtres, fiches et sources.
+- Carte avec RPC qui masque ou arrondit les coordonnées et liste des territoires ultramarins.
+- Chronologie des événements avec statut annoncé, confirmé, reporté, annulé ou non confirmé.
+- Quatre observatoires avec source, méthode, période, périmètre, limites et statut de vérification.
+- Médiathèque avec originaux privés, dérivés privés, pixelisation manuelle et contrôles avant publication.
+- Contributions publiques via Edge Function Turnstile, limitation de cinq envois par empreinte IP sur quinze minutes et insertion privée.
+- Migrations 0002 et 0003 pour les rôles, Storage, observatoires, RPC publiques et audit.
+- Tests d’intégration RLS et vérification Deno de l’Edge Function.
 
-## Inclus
-- Authentification Supabase avec récupération de session et contrôle du profil.
-- Accès à l’administration refusé si aucun profil d’équipe n’est associé au compte.
-- Tableau de bord alimenté par les enregistrements réels.
-- Création et modification d’entités documentaires.
-- Ajout de sources documentaires.
-- Consultation et modération des contributions.
-- Liste des membres et journal d’activité réservés aux administrateurs.
-- Site public connecté : contenus publiés uniquement, recherche, filtres, fiches et sources associées.
-- Migration séparée pour les rôles, RLS et journalisation.
+## Contrôles automatisés
+- `npm run typecheck` : réussi.
+- `npm run build` : réussi pour le site public et l’administration.
+- `deno check supabase/functions/submit-contribution/index.ts` : réussi.
+- `supabase test db` sur l’instance Supabase réelle : non exécuté à ce stade.
 
-## À réaliser avant ouverture publique
-- Carte, chronologie, observatoires et statistiques méthodologiquement sourcées.
-- Bibliothèque média, stockage privé des originaux, dérivés publics et contrôle des droits.
-- Anonymisation avec validation humaine.
-- Formulaires publics de contribution, signalement et correction.
-- Tests RLS automatisés pour anon, moderator, fact_checker, editor et administrator.
-- Sauvegardes et tests de restauration.
-- Vérification juridique RGPD, droit à l’image, droit d’auteur et protection des mineurs.
+## Configuration indispensable avant ouverture publique
+1. Appliquer les migrations 0001, 0002 et 0003 sur une instance Supabase de préproduction.
+2. Créer les comptes de test editor, fact_checker, moderator et administrator ; exécuter `supabase test db`.
+3. Déployer `supabase/functions/submit-contribution`.
+4. Configurer Turnstile : `VITE_TURNSTILE_SITE_KEY` dans les variables GitHub Actions ; `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES` et `PUBLIC_SITE_ORIGIN` dans les secrets Supabase.
+5. Tester les buckets privés, la génération des URL signées, l’import, la pixelisation et la publication conditionnée.
+6. Tester sauvegardes et restauration ; faire vérifier RGPD, droit à l’image, droit d’auteur et protection des mineurs.
 
-## Migration
-1. Sauvegarder le projet Supabase.
-2. Appliquer 0001_initial_schema.sql si le schéma initial n’est pas déjà installé.
-3. Appliquer 0002_role_permissions_and_audit.sql.
-4. Créer le premier compte dans Supabase Auth.
-5. Copier son UUID depuis Authentication > Users.
-6. Dans SQL Editor, attribuer le rôle administrateur manuellement :
+## Premier administrateur
+
+Créer un compte dans Supabase Auth, copier son UUID depuis Authentication > Users puis attribuer le rôle manuellement dans SQL Editor :
 
 ```sql
 insert into public.profiles (id, display_name, role)
 values ('UUID_DU_COMPTE_AUTH', 'Administration', 'administrator');
 ```
 
-7. Tester les droits de chaque rôle et l’accès anonyme.
-8. Configurer VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY pour les deux applications.
-
-Ne jamais placer une clé service_role dans une application navigateur.
-
-## Modules ajoutés dans la branche `reprise/modules-documentaires`
-
-- Carte publique avec coordonnées masquées ou arrondies et liste ultramarine.
-- Chronologie des événements publiés avec statut.
-- Quatre observatoires avec méthodologie, limites, sources et contrôle de publication.
-- Médiathèque : originaux privés, dérivé privé, pixelisation manuelle, validation des droits et publication conditionnée.
-- Formulaire de contribution protégé par Cloudflare Turnstile via Edge Function.
-- Script d’intégration RLS pour les rôles et l’accès anonyme.
-
-La migration `0003_documentary_modules_storage.sql` doit être appliquée après 0001 et 0002. Le test RLS n’a pas été exécuté sur le projet Supabase réel : il doit être lancé sur une instance de préproduction avec les quatre comptes de test. Voir `docs/IMPLEMENTATION-MODULES.md`.
+Ne jamais placer une clé `service_role` dans une application navigateur. Les étapes détaillées figurent dans `docs/IMPLEMENTATION-MODULES.md`.
