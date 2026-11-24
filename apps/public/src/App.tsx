@@ -140,14 +140,14 @@ export default function App() {
     return () => { alive = false }
   }, [])
 
-  const openItem = async (item: Item) => {
+  const openItem = async (item: Item, updateHistory = true) => {
     setSelected(item)
     setSelectedSources([])
     setRelatedItems([])
     setDetailLoading(true)
     setPage('archives')
     setMobileMenu(false)
-    window.history.pushState(null, '', `#dossier/${encodeURIComponent(item.slug)}`)
+    if (updateHistory) window.history.pushState(null, '', `#dossier/${encodeURIComponent(item.slug)}`)
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (!supabase) { setDetailLoading(false); return }
     const [linksResult, relationsResult] = await Promise.all([
@@ -177,7 +177,7 @@ export default function App() {
         const slug = route.slice('dossier/'.length)
         const match = items.find((item) => item.slug === slug)
         if (match) {
-          setSelected(match)
+          if (selected?.id !== match.id) void openItem(match, false)
           setPage('archives')
         }
         return
@@ -191,7 +191,7 @@ export default function App() {
     window.addEventListener('popstate', syncRoute)
     if (items.length) syncRoute()
     return () => { window.removeEventListener('hashchange', syncRoute); window.removeEventListener('popstate', syncRoute) }
-  }, [items])
+  }, [items, selected])
 
   const types = useMemo(() => Array.from(new Set(items.map((item) => item.entity_type))).sort(), [items])
   const territories = useMemo(() => Array.from(new Set(items.map((item) => item.territory).filter(Boolean) as string[])).sort(), [items])
