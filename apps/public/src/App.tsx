@@ -335,7 +335,7 @@ export default function App() {
       </div><p className="knowledge-note">Une déclaration, un témoignage, une estimation et un fait recoupé ne sont pas des catégories interchangeables. La charte éditoriale détaille cette distinction.</p></section>
     </div>
   } else {
-    content = <div className="project-page"><section className="project-intro section-wrap"><div className="section-index">04 — LE PROJET</div><h1>UNE BASE<br/><em>DOCUMENTAIRE.</em></h1><p>2 PASSIONS rassemble des dossiers, des événements, des sources et des médias liés aux mobilisations. La base permet de consulter les archives, de les retrouver par date ou territoire et de contribuer à leur documentation.</p></section>
+    content = <div className="project-page"><section className="project-intro section-wrap"><div className="section-index">04 — LE PROJET</div><h1>UNE BASE<br/><em>DOCUMENTAIRE.</em></h1><p>Deux Passions rassemble des dossiers, des événements, des sources et des médias liés aux mobilisations. La base permet de consulter les archives, de les retrouver par date ou territoire et de contribuer à leur documentation.</p></section>
       <section className="project-principles"><div className="section-wrap project-principle-grid">
         <div><span>01 / CONSULTER</span><h2>DES DOSSIERS<br/>DOCUMENTÉS.</h2><p>Chaque fiche rassemble les informations publiées, leur contexte et les documents associés.</p></div>
         <div><span>02 / RETROUVER</span><h2>DATES, LIEUX<br/>ET SOURCES.</h2><p>La recherche, la carte et la chronologie permettent de naviguer dans les archives.</p></div>
@@ -349,7 +349,7 @@ export default function App() {
   return <div className="site-shell">
     <div className="topline"><span>ARCHIVES DOCUMENTAIRES INDÉPENDANTES · FRANCE</span><span>ARCHIVER. DOCUMENTER. TRANSMETTRE.</span></div>
     <header className="site-header">
-      <button className="brand" onClick={() => navigate('accueil')} aria-label="2 PASSIONS, accueil"><BrandMark/><span>PASSIONS<span>.</span></span></button>
+      <button className="brand" onClick={() => navigate('accueil')} aria-label="Deux Passions, accueil"><BrandMark/><span>Deux Passions</span></button>
       <button className="mobile-menu-toggle" onClick={() => setMobileMenu((open) => !open)} aria-label={mobileMenu ? 'Fermer le menu' : 'Ouvrir le menu'}>{mobileMenu ? <X/> : <Menu/>}</button>
       <nav className={mobileMenu ? 'main-nav is-open' : 'main-nav'} aria-label="Navigation principale">
         {pages.map((entry) => <button key={entry.id} className={page === entry.id ? 'nav-link active' : 'nav-link'} onClick={() => navigate(entry.id)}><span>{entry.number}</span>{entry.label}</button>)}
@@ -361,7 +361,7 @@ export default function App() {
       <button className="brand footer-brand" onClick={() => navigate('accueil')}><BrandMark/><span>PASSIONS<span>.</span></span></button>
       <div className="footer-signature">ARCHIVER.<br/>DOCUMENTER.<br/>TRANSMETTRE.</div>
       <div className="footer-nav">{pages.map((entry) => <button key={entry.id} onClick={() => navigate(entry.id)}>{entry.label}</button>)}</div>
-      <div className="footer-note"><span>ARCHIVE DOCUMENTAIRE INDÉPENDANTE</span><small>Les contenus sont publiés après examen éditorial. Les sources et les limites doivent rester consultables.</small><small>© 2 PASSIONS</small></div>
+      <div className="footer-note"><span>ARCHIVE DOCUMENTAIRE INDÉPENDANTE</span><small>Les contenus sont publiés après examen éditorial. Les sources et les limites doivent rester consultables.</small><small>© Deux Passions</small></div>
     </footer>
     {!isSupabaseConfigured && <div className="config-banner">CONNEXION À LA BASE DOCUMENTAIRE NON CONFIGURÉE</div>}
     {isSupabaseConfigured && !loading && items.length === 0 && <div className="site-state-note"><FileText size={14}/> La base publique ne contient pas encore de dossier publié.</div>}
