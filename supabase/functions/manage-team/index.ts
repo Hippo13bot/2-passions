@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const allowedRoles = ["administrator", "editor", "fact_checker", "moderator"];
@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   const token = auth.replace(/^Bearer\s+/i, "");
   if (!token) return Response.json({ error: "Authentification requise." }, { status: 401, headers: cors });
   const url = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
   const { data: userData, error: userError } = await userClient.auth.getUser(token);
