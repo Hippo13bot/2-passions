@@ -9,12 +9,11 @@ const verification:Record<string,string>={unverified:'NON VÉRIFIÉ',single_sour
 
 export default function App(){
  const [query,setQuery]=useState(''),[active,setActive]=useState('TOUT'),[mobileMenu,setMobileMenu]=useState(false)
- const [items,setItems]=useState<Item[]>([]),[sources,setSources]=useState<Source[]>([]),[selected,setSelected]=useState<Item|null>(null),[selectedSources,setSelectedSources]=useState<Source[]>([])
+ const [items,setItems]=useState<Item[]>([]),[selected,setSelected]=useState<Item|null>(null),[selectedSources,setSelectedSources]=useState<Source[]>([])
  const [loading,setLoading]=useState(true),[error,setError]=useState('')
  useEffect(()=>{let alive=true;async function load(){if(!supabase){setLoading(false);return}
   const {data,error}=await supabase.from('entities').select('id,entity_type,title,summary,body,event_date,territory,verification_status,slug').eq('editorial_status','published').order('event_date',{ascending:false,nullsFirst:false}).limit(250)
   if(!alive)return;if(error)setError('Les archives ne peuvent pas être chargées pour le moment.');else setItems((data||[]) as Item[])
-  if(!error&&data?.length){const ids=data.map((x:any)=>x.id);const {data:links}=await supabase.from('entity_sources').select('source_id').in('entity_id',ids);if(links?.length){const sourceIds=[...new Set(links.map((x:any)=>x.source_id))];const {data:refs}=await supabase.from('sources').select('id,title,source_url,publisher,published_on').in('id',sourceIds);if(alive)setSources((refs||[]) as Source[])}}
   if(alive)setLoading(false)
  }void load();return()=>{alive=false}},[])
  const types=useMemo(()=>['TOUT',...Array.from(new Set(items.map(x=>labels[x.entity_type]||x.entity_type.toUpperCase())))],[items])
