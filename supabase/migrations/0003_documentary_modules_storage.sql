@@ -85,6 +85,26 @@ create trigger observatory_publication_checks before insert or update on public.
   for each row execute function public.enforce_observatory_publication();
 
 -- Le média ne peut être publié que si le dossier parent est déjà publié.
+create or replace function public.enforce_media_publication_checks()
+returns trigger language plpgsql set search_path = public as $
+begin
+  if new.editorial_status = 'published' and (new.public_derivative_path is null or new.consent_reviewed is not true
+     or new.anonymization_reviewed is not true or new.rights_status <> 'cleared') then
+    raise exception 'Publication refusée : dérivé, droits, consentement et anonymisation doivent être validés.';
+  end if;
+  if new.editorial_status = 'published' and not exists(select 1 from public.entities e where e.id = new.entity_id and e.editorial_status = 'published') then
+    raise exception 'Publication média refusée : le dossier associé doit être publié.';
+  end if;
+  if new.editorial_status = 'published' then
+    new.reviewed_at := now();
+    new.reviewed_by := auth.uid();
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists media_publication_checks on public.media_assets;
+create trigger media_publication_checks before insert or update on public.media_assets
+  for each row execute function public.enforce_media_publication_checks();
 -- Buckets : originaux non publics, dérivés accessibles uniquement après validation éditoriale.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('media-originals','media-originals',false,52428800,array['image/jpeg','image/png','image/webp','image/heic','video/mp4','audio/mpeg','application/pdf'])
