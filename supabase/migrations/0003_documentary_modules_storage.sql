@@ -56,6 +56,56 @@ create policy "public reads sources of published observatories" on public.observ
 create policy "editors manage observatory source links" on public.observatory_sources
   for all to authenticated using (public.can_edit_content()) with check (public.can_edit_content());
 
+-- Les vérificateurs peuvent modifier uniquement le statut de vérification ; le trigger
+-- de la migration 0002 interdit les changements de contenu pour ce rôle.
+drop policy if exists "editors update entities" on public.entities;
+create policy "editors and fact-checkers update entities" on public.entities
+  for update to authenticated using (public.can_verify_content()) with check (public.can_verify_content());
+
+create or replace function public.enforce_observatory_publication()
+returns trigger language plpgsql set search_path = public as $
+begin
+  if new.editorial_status = 'published' then
+    if length(trim(coalesce(new.methodology,''))) < 12 then
+      raise exception 'Publication observatoire refusée : méthodologie insuffisante.';
+    end if;
+    if new.verification_status = 'unverified' then
+      raise exception 'Publication observatoire refusée : niveau de vérification requis.';
+    end if;
+    if not exists(select 1 from public.observatory_sources os where os.entry_id = new.id) then
+      raise exception 'Publication observatoire refusée : au moins une source doit être associée.';
+    end if;
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$;
+drop trigger if exists observatory_publication_checks on public.observatory_entries;
+create trigger observatory_publication_checks before insert or update on public.observatory_entries
+  for each row execute function public.enforce_observatory_publication();
+
+-- Le média ne peut être publié que si le dossier parent est déjà publié.
+create or replace function public.enforce_media_publication_checks()
+returns trigger language plpgsql set search_path = public as $
+begin
+  if new.editorial_status = 'published' and (new.public_derivative_path is null or new.consent_reviewed is not true
+     or new.anonymization_reviewed is not true or new.rights_status <> 'cleared') then
+    raise exception 'Publication refusée : dérivé, droits, consentement et anonymisation doivent être validés.';
+  end if;
+  if new.editorial_status = 'published' and not exists(select 1 from public.entities e where e.id = new.entity_id and e.editorial_status = 'published') then
+    raise exception 'Publication média refusée : le dossier associé doit être publié.';
+  end if;
+  if new.editorial_status = 'published' then
+    new.reviewed_at := now();
+    new.reviewed_by := auth.uid();
+  end if;
+  return new;
+end;
+$;
+
+-- Les contributions passent par une Edge Function protégée par Cloudflare Turnstile.
+-- Cela évite de laisser l'API publique insérer directement dans la table privée.
+drop policy if exists "anyone can submit contribution" on public.contributions;
 create index if not exists observatory_topic_status_idx on public.observatory_entries(topic, editorial_status, period_end desc);
 create index if not exists entities_public_timeline_idx on public.entities(entity_type, editorial_status, event_date desc);
 
