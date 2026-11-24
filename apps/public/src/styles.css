@@ -311,3 +311,9 @@ h1,h2{font-family:var(--display);font-weight:400;letter-spacing:-.012em}
   .site-footer{grid-template-columns:1fr 1fr;gap:25px 15px}.footer-note{grid-column:1/-1}
   .map-panel,.timeline-panel{padding:14px}
 }
+
+.timeline-open{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border:0;background:transparent;padding:0;text-align:left;font:20px var(--display);cursor:pointer}
+.timeline-open svg{color:var(--red);flex-shrink:0}
+.timeline-open:hover{color:var(--red)}
+.map-open-record{display:inline-flex;align-items:center;gap:7px;margin-left:auto;border:0;border-bottom:1px solid var(--red);background:transparent;padding:5px 0;color:var(--red);font:9px var(--mono);cursor:pointer}
+.map-selected{width:100%}
