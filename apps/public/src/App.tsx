@@ -8,6 +8,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase'
 import MapTimeline from './components/MapTimeline'
 import Observatories from './components/Observatories'
 import ContributionForm from './components/ContributionForm'
+import BrandMark from './components/BrandMark'
 
 type Page = 'accueil' | 'archives' | 'explorer' | 'comprendre' | 'projet'
 type Item = {
@@ -348,7 +349,7 @@ export default function App() {
   return <div className="site-shell">
     <div className="topline"><span>ARCHIVES DOCUMENTAIRES INDÉPENDANTES · FRANCE</span><span>ARCHIVER. DOCUMENTER. TRANSMETTRE.</span></div>
     <header className="site-header">
-      <button className="brand" onClick={() => navigate('accueil')} aria-label="2 PASSIONS, accueil"><span className="brand-mark">2</span><span>PASSIONS<span>.</span></span></button>
+      <button className="brand" onClick={() => navigate('accueil')} aria-label="2 PASSIONS, accueil"><BrandMark/><span>PASSIONS<span>.</span></span></button>
       <button className="mobile-menu-toggle" onClick={() => setMobileMenu((open) => !open)} aria-label={mobileMenu ? 'Fermer le menu' : 'Ouvrir le menu'}>{mobileMenu ? <X/> : <Menu/>}</button>
       <nav className={mobileMenu ? 'main-nav is-open' : 'main-nav'} aria-label="Navigation principale">
         {pages.map((entry) => <button key={entry.id} className={page === entry.id ? 'nav-link active' : 'nav-link'} onClick={() => navigate(entry.id)}><span>{entry.number}</span>{entry.label}</button>)}
