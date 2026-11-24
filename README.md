@@ -24,7 +24,7 @@ Sur une instance Supabase de préproduction, appliquer dans l’ordre :
 1. `supabase/migrations/0001_initial_schema.sql`
 2. `supabase/migrations/0002_role_permissions_and_audit.sql`
 
-Créer les comptes dans Supabase Auth. Le profil et le rôle du premier administrateur sont attribués manuellement ; voir `docs/IMPLEMENTATION-STATUS.md`.
+Créer les comptes dans Supabase Auth. Le profil et le rôle du premier administrateur sont attribués manuellement ; voir `docs/IMPLEMENTATION-STATUS.md` et `docs/IMPLEMENTATION-MODULES.md`.
 
 ## Commandes
 ```bash
@@ -37,4 +37,4 @@ npm run build
 Consulter `docs/ARCHITECTURE.md`, `docs/DATA-MODEL.md`, `docs/EDITORIAL-CHARTER.md`, `docs/SECURITY.md`, `docs/DEPLOYMENT.md`, `docs/ROADMAP.md` et `docs/IMPLEMENTATION-STATUS.md`.
 
 ## État du produit
-Le CMS initial et le site public connecté sont en cours de reprise. La cartographie, les observatoires, la bibliothèque média, les contributions publiques et les tests de sécurité restent à réaliser. Cette version n’est pas certifiée prête pour une ouverture publique.
+Le CMS initial et le site public connecté sont en cours de reprise. La cartographie, la chronologie, les observatoires, la médiathèque, l’anonymisation manuelle et le formulaire de contribution protégé sont implémentés dans la branche de reprise. Leur activation exige la migration 0003, la configuration Turnstile et les tests RLS sur une instance Supabase isolée. Cette version n’est pas certifiée prête pour une ouverture publique.
