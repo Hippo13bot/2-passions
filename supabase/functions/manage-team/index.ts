@@ -23,8 +23,20 @@ Deno.serve(async (req) => {
   const admin = createClient(url, serviceKey);
   const { data: actor } = await admin.from("profiles").select("role").eq("id", userData.user.id).maybeSingle();
   if (actor?.role !== "administrator") return Response.json({ error: "Seul un administrateur peut gérer l'équipe." }, { status: 403, headers: cors });
-  let body: { email?: string; role?: string; display_name?: string };
+  let body: { action?: string; email?: string; role?: string; display_name?: string };
   try { body = await req.json(); } catch { return Response.json({ error: "Requête invalide." }, { status: 400, headers: cors }); }
+  if (body.action === "list") {
+    const { data: profiles, error: profilesError } = await admin.from("profiles").select("*").order("created_at", { ascending: true });
+    if (profilesError) return Response.json({ error: profilesError.message }, { status: 500, headers: cors });
+    const usersById = new Map<string, string>();
+    for (let page = 1; page <= 20; page++) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 500 });
+      if (error) return Response.json({ error: "Lecture des comptes impossible." }, { status: 502, headers: cors });
+      for (const user of data.users) if (user.email) usersById.set(user.id, user.email);
+      if (data.users.length < 500) break;
+    }
+    return Response.json({ members: (profiles || []).map((profile) => ({ ...profile, email: usersById.get(profile.id) || null })) }, { headers: cors });
+  }
   const email = (body.email || "").trim().toLowerCase();
   const role = body.role || "editor";
   if (!email || !email.includes("@") || !allowedRoles.includes(role)) {
