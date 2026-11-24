@@ -63,7 +63,7 @@ create policy "editors and fact-checkers update entities" on public.entities
   for update to authenticated using (public.can_verify_content()) with check (public.can_verify_content());
 
 create or replace function public.enforce_observatory_publication()
-returns trigger language plpgsql set search_path = public as $
+returns trigger language plpgsql set search_path = public as $$
 begin
   if new.editorial_status = 'published' then
     if length(trim(coalesce(new.methodology,''))) < 12 then
@@ -79,7 +79,7 @@ begin
   new.updated_at := now();
   return new;
 end;
-$;
+$$;
 drop trigger if exists observatory_publication_checks on public.observatory_entries;
 create trigger observatory_publication_checks before insert or update on public.observatory_entries
   for each row execute function public.enforce_observatory_publication();
