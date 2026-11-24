@@ -36,7 +36,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
   }).select('id').single()
   if(error){await supabase.storage.from('source-documents').remove([path]);setBusy(false);onMessage('Enregistrement de la source impossible : '+error.message);return}
   await supabase.from('source_documents').insert({source_id:data.id,storage_path:path,file_name:file.name,mime_type:mimeType,file_size:file.size,extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),created_by:profileId})
-  setBusy(false);setFile(null);setTitle('');setPublisher('');setDate('');onMessage(isText?'Document importé et texte indexé.':mimeType.startsWith('image/')?'Image importée. Lance l’OCR puis relis le texte reconnu.':'Document importé. Le texte peut être ajouté dans l’éditeur documentaire.');await load()
+  setBusy(false);setFile(null);setTitle('');setPublisher('');setDate('');onMessage(isText?'Document importé et texte indexé.':mimeType.startsWith('image/')?'Image importée. Lance l’OCR puis relis le texte reconnu.':mimeType==='application/pdf'?'PDF importé. Lance l’extraction des pages puis relis le texte reconnu.':'Document importé. Le texte peut être ajouté dans l’éditeur documentaire.');await load()
  }
  async function runImageOcr(item:Source){
   if(!supabase||!item.storage_path)return
