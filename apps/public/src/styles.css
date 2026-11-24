@@ -570,3 +570,52 @@ p, h1, h2, h3, small, b, strong, a, button, label, span {
   .site-footer { grid-template-columns: minmax(0, 1fr); }
   .footer-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Mobile identity and headline fit — keep the wordmark and hero title intact. */
+@media (max-width: 640px) {
+  .brand {
+    flex: 0 1 auto;
+    min-width: 0;
+    gap: 7px;
+    font-size: clamp(19px, 5.5vw, 23px);
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .brand-mark {
+    flex: 0 0 29px;
+    width: 29px;
+    height: 29px;
+    font-size: 21px;
+    line-height: 1;
+  }
+  .brand > span:last-child {
+    display: inline-block;
+    line-height: 1;
+  }
+  .home-hero-copy h1 {
+    font-size: clamp(36px, 10.4vw, 66px);
+    line-height: 1;
+    letter-spacing: -.025em;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+  .home-hero-copy h1 em {
+    white-space: nowrap;
+    font-style: normal;
+  }
+}
+
+@media (max-width: 380px) {
+  .site-header { padding-inline: 4vw; gap: 8px; }
+  .brand { font-size: 19px; gap: 6px; }
+  .brand-mark {
+    flex-basis: 26px;
+    width: 26px;
+    height: 26px;
+    font-size: 19px;
+  }
+  .home-hero-copy { padding-inline: 5vw; }
+  .home-hero-copy h1 { font-size: clamp(33px, 10.1vw, 38px); }
+}
