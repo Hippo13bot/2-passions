@@ -200,7 +200,7 @@ drop trigger if exists audit_observatory_entries on public.observatory_entries;
 create trigger audit_observatory_entries after insert or update or delete on public.observatory_entries
   for each row execute function public.write_observatory_audit_log();
 
--- Limitation de débit côté serveur : empreinte SHA-256 de l'adresse IP, sans stockage de l'IP brute.
+-- Limitation de débit côté serveur : empreinte HMAC-SHA-256 de l'adresse IP, sans stockage de l'IP brute.
 create table if not exists public.contribution_rate_limits (
   key_hash text primary key,
   window_started_at timestamptz not null default now(),
