@@ -86,7 +86,7 @@ create trigger observatory_publication_checks before insert or update on public.
 
 -- Le média ne peut être publié que si le dossier parent est déjà publié.
 create or replace function public.enforce_media_publication_checks()
-returns trigger language plpgsql set search_path = public as $
+returns trigger language plpgsql set search_path = public as $$
 begin
   if new.editorial_status = 'published' and (new.public_derivative_path is null or new.consent_reviewed is not true
      or new.anonymization_reviewed is not true or new.rights_status <> 'cleared') then
@@ -101,7 +101,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 drop trigger if exists media_publication_checks on public.media_assets;
 create trigger media_publication_checks before insert or update on public.media_assets
   for each row execute function public.enforce_media_publication_checks();
@@ -210,7 +210,7 @@ create table if not exists public.contribution_rate_limits (
 alter table public.contribution_rate_limits enable row level security;
 revoke all on public.contribution_rate_limits from anon, authenticated;
 create or replace function public.consume_contribution_rate_limit(p_key_hash text, p_limit integer default 5, p_window_seconds integer default 900)
-returns boolean language plpgsql security definer set search_path = public as $
+returns boolean language plpgsql security definer set search_path = public as $$
 declare v_count integer;
 begin
   insert into public.contribution_rate_limits(key_hash,window_started_at,request_count,updated_at)
@@ -222,7 +222,7 @@ begin
   returning request_count into v_count;
   return v_count <= p_limit;
 end;
-$;
+$$;
 revoke all on function public.consume_contribution_rate_limit(text,integer,integer) from public, anon, authenticated;
 grant execute on function public.consume_contribution_rate_limit(text,integer,integer) to service_role;
 -- Turnstile et la limitation IP hashée sont appliqués côté Edge Function. La clé secrète
