@@ -109,3 +109,6 @@ create policy "administrators delete source documents" on storage.objects
 -- Cron et HTTP : le job planifié sera activé après ajout de la clé service_role dans Vault.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
+
+-- Les tables nouvellement créées doivent être explicitement exposées à PostgREST.
+grant select, insert, update, delete on public.watch_sources, public.watch_items, public.source_documents to authenticated;
