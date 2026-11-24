@@ -200,5 +200,30 @@ drop trigger if exists audit_observatory_entries on public.observatory_entries;
 create trigger audit_observatory_entries after insert or update or delete on public.observatory_entries
   for each row execute function public.write_observatory_audit_log();
 
--- NOTE : le CAPTCHA/anti-robot doit être activé côté serveur avant d'ouvrir le formulaire
--- à grande échelle. La clé secrète Turnstile ne doit jamais être exposée au navigateur.
+-- Limitation de débit côté serveur : empreinte SHA-256 de l'adresse IP, sans stockage de l'IP brute.
+create table if not exists public.contribution_rate_limits (
+  key_hash text primary key,
+  window_started_at timestamptz not null default now(),
+  request_count integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.contribution_rate_limits enable row level security;
+revoke all on public.contribution_rate_limits from anon, authenticated;
+create or replace function public.consume_contribution_rate_limit(p_key_hash text, p_limit integer default 5, p_window_seconds integer default 900)
+returns boolean language plpgsql security definer set search_path = public as $
+declare v_count integer;
+begin
+  insert into public.contribution_rate_limits(key_hash,window_started_at,request_count,updated_at)
+  values(p_key_hash,now(),1,now())
+  on conflict(key_hash) do update set
+    window_started_at = case when contribution_rate_limits.window_started_at < now() - make_interval(secs => p_window_seconds) then now() else contribution_rate_limits.window_started_at end,
+    request_count = case when contribution_rate_limits.window_started_at < now() - make_interval(secs => p_window_seconds) then 1 else contribution_rate_limits.request_count + 1 end,
+    updated_at = now()
+  returning request_count into v_count;
+  return v_count <= p_limit;
+end;
+$;
+revoke all on function public.consume_contribution_rate_limit(text,integer,integer) from public, anon, authenticated;
+grant execute on function public.consume_contribution_rate_limit(text,integer,integer) to service_role;
+-- Turnstile et la limitation IP hashée sont appliqués côté Edge Function. La clé secrète
+-- Turnstile et la clé service_role ne doivent jamais être exposées au navigateur.
