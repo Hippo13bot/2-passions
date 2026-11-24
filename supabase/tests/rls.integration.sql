@@ -30,6 +30,8 @@ do $$ begin
  if exists(select 1 from public.contributions where id=current_setting('test.contribution_id')::uuid) then raise exception 'Anon ne doit jamais lire une contribution.'; end if;
  if exists(select 1 from public.published_map_points() where id=current_setting('test.published_id')::uuid) then raise exception 'Un point caché ne doit jamais apparaître sur la carte.'; end if;
  if not has_function_privilege('anon','public.published_map_points()','EXECUTE') then raise exception 'La RPC cartographique doit être publique.'; end if;
+ if has_function_privilege('anon','public.consume_contribution_rate_limit(text,integer,integer)','EXECUTE') then raise exception 'Anon ne doit pas exécuter la fonction de limitation.'; end if;
+ if (select count(*) from public.contribution_rate_limits) <> 0 then raise exception 'Anon ne doit pas lire les empreintes de limitation.'; end if;
  if (select count(*) from storage.objects where bucket_id='media-originals') <> 0 then raise exception 'Anon ne doit pas lire les originaux privés.'; end if;
 end $$;
 do $$ begin
