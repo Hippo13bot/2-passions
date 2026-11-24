@@ -22,3 +22,13 @@ Ne pas publier de noms et prénoms de mineurs, coordonnées privées, horaires i
 
 ## Conformité
 Faire vérifier le dispositif au regard du RGPD, du droit à l'image, du droit d'auteur, des règles relatives aux mineurs et des obligations de publication applicables. Ce document est un cadre technique, pas un avis juridique.
+
+
+## Migration des modules documentaires
+- Appliquer `0003_documentary_modules_storage.sql` après les migrations précédentes.
+- Les deux buckets média sont privés ; le public ne peut obtenir une URL signée que pour un dérivé lié à un dossier publié et validé.
+- La publication d’un média est bloquée sans dérivé, droits, consentement, anonymisation et dossier parent publié.
+- La publication d’un indicateur d’observatoire exige une source et un niveau de vérification.
+- Les contributions publiques passent par l’Edge Function `submit-contribution` et Cloudflare Turnstile ; l’insertion directe anon est retirée.
+- Ne jamais exposer `TURNSTILE_SECRET_KEY` ou `SUPABASE_SERVICE_ROLE_KEY` au navigateur.
+- Voir `docs/IMPLEMENTATION-MODULES.md` pour le déploiement et les tests.
