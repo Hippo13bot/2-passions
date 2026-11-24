@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { FileText, Upload, ExternalLink, Save } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-declare global { interface Window { Tesseract?: { createWorker:(language:string)=>Promise<{recognize:(input:Blob)=>Promise<{data:{text:string}}>;terminate:()=>Promise<void>}> } } }
+declare global { interface Window { Tesseract?: { createWorker:(language:string)=>Promise<{recognize:(input:any)=>Promise<{data:{text:string}}>;terminate:()=>Promise<void>}> }; pdfjsLib?: { GlobalWorkerOptions:{workerSrc:string}; getDocument:(input:any)=>{promise:Promise<{numPages:number;getPage:(n:number)=>Promise<any>}>} } } }
 type Source={id:string;title:string;file_name:string|null;mime_type:string|null;storage_path:string|null;extracted_text:string|null;abstract:string|null;extraction_status:string;created_at:string}
 const maxSize=50*1024*1024
 const mimeByExtension:Record<string,string>={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',tif:'image/tiff',tiff:'image/tiff',txt:'text/plain',md:'text/markdown',csv:'text/csv',html:'text/html',htm:'text/html',rtf:'application/rtf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',odt:'application/vnd.oasis.opendocument.text',ods:'application/vnd.oasis.opendocument.spreadsheet',odp:'application/vnd.oasis.opendocument.presentation'}
@@ -51,6 +51,40 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
   }catch(error){onMessage('OCR impossible : '+(error instanceof Error?error.message:'erreur inconnue'))}
   setBusy(false)
  }
+ async function runPdfExtraction(item:Source){
+  if(!supabase||!item.storage_path)return
+  setBusy(true);onMessage('Lecture du PDF : extraction du texte et OCR des pages numérisées si nécessaire…')
+  let worker:{recognize:(input:any)=>Promise<{data:{text:string}}>;terminate:()=>Promise<void>}|null=null
+  try{
+   if(!window.pdfjsLib){await new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';script.onload=()=>resolve();script.onerror=()=>reject(new Error('Chargement du lecteur PDF impossible.'));document.head.appendChild(script)})}
+   window.pdfjsLib!.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+   const {data:signed,error}=await supabase.storage.from('source-documents').createSignedUrl(item.storage_path,300)
+   if(error||!signed?.signedUrl)throw new Error(error?.message||'Fichier inaccessible.')
+   const response=await fetch(signed.signedUrl);if(!response.ok)throw new Error('Téléchargement du PDF impossible.')
+   const bytes=new Uint8Array(await response.arrayBuffer())
+   const pdf=await window.pdfjsLib!.getDocument({data:bytes}).promise
+   const pageCount=Math.min(pdf.numPages,15)
+   const pages:string[]=[]
+   for(let pageNumber=1;pageNumber<=pageCount;pageNumber++){
+    const page=await pdf.getPage(pageNumber)
+    const content=await page.getTextContent()
+    let pageText=content.items.map((entry:any)=>entry.str||'').join(' ').trim()
+    if(pageText.length<30){
+     if(!window.Tesseract){await new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';script.onload=()=>resolve();script.onerror=()=>reject(new Error('Chargement du moteur OCR impossible.'));document.head.appendChild(script)})}
+     if(!worker)worker=await window.Tesseract!.createWorker('fra')
+     const viewport=page.getViewport({scale:1.5})
+     const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height)
+     const context=canvas.getContext('2d');if(!context)throw new Error('Canvas indisponible pour cette page.')
+     await page.render({canvasContext:context,viewport}).promise
+     const recognized=await worker.recognize(canvas);pageText=recognized.data.text||''
+    }
+    pages.push(`[Page ${pageNumber}]\n${pageText}`)
+   }
+   setSelected(item);setText(pages.join('\n\n'))
+   onMessage(`Extraction terminée : ${pageCount} page(s) traitée(s)${pdf.numPages>pageCount?' (limite de 15 pages par traitement)':''}. Relis le texte avant de l’enregistrer.`)
+  }catch(error){onMessage('Extraction PDF impossible : '+(error instanceof Error?error.message:'erreur inconnue'))}
+  finally{if(worker)await worker.terminate();setBusy(false)}
+ }
  async function editText(){
   if(!supabase||!selected)return
   setBusy(true)
@@ -75,7 +109,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
    </form>
   </section>
   <section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">FONDS DOCUMENTAIRE</span><h2>Documents importés</h2></div><span className="status-pill">{items.length} fichiers</span></div>
-   {items.map(item=><div className="data-row" key={item.id}><div><b>{item.title}</b><small>{item.file_name} · {item.mime_type} · {new Date(item.created_at).toLocaleDateString('fr-FR')}</small><small>{item.extraction_status==='extracted'?'Texte disponible':item.extraction_status==='needs_ocr'?'OCR nécessaire':'Texte à compléter'}</small></div>{item.mime_type?.startsWith('image/')&&<button className="icon-button" disabled={busy} onClick={()=>void runImageOcr(item)} title="Reconnaissance de texte par OCR"><span>OCR</span></button>}<button className="icon-button" onClick={()=>{setSelected(item);setText(item.extracted_text||'')}} title="Modifier le texte extrait"><Save size={15}/></button><button className="icon-button" onClick={()=>void openFile(item)} title="Ouvrir le fichier"><ExternalLink size={15}/></button></div>)}
+   {items.map(item=><div className="data-row" key={item.id}><div><b>{item.title}</b><small>{item.file_name} · {item.mime_type} · {new Date(item.created_at).toLocaleDateString('fr-FR')}</small><small>{item.extraction_status==='extracted'?'Texte disponible':item.extraction_status==='needs_ocr'?'OCR nécessaire':'Texte à compléter'}</small></div>{item.mime_type?.startsWith('image/')&&<button className="icon-button" disabled={busy} onClick={()=>void runImageOcr(item)} title="Reconnaissance de texte par OCR"><span>OCR</span></button>}{item.mime_type==='application/pdf'&&<button className="icon-button" disabled={busy} onClick={()=>void runPdfExtraction(item)} title="Extraire le texte et lancer l’OCR des pages scannées"><span>PDF</span></button>}<button className="icon-button" onClick={()=>{setSelected(item);setText(item.extracted_text||'')}} title="Modifier le texte extrait"><Save size={15}/></button><button className="icon-button" onClick={()=>void openFile(item)} title="Ouvrir le fichier"><ExternalLink size={15}/></button></div>)}
    {!items.length&&<p className="empty-state">Aucun document importé.</p>}
   </section>
   {selected&&<section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">TEXTE INDEXÉ</span><h2>{selected.title}</h2></div><button className="icon-button" onClick={()=>setSelected(null)}>✕</button></div><p className="document-note">Tu peux coller ici le texte extrait d'un PDF scanné ou d'une image. Il sera conservé avec la source pour la recherche et les futures synthèses.</p><textarea className="document-textarea" rows={14} value={text} onChange={e=>setText(e.target.value)} placeholder="Texte intégral extrait du document…"/><button className="primary" disabled={busy} onClick={()=>void editText()}><Save size={15}/> ENREGISTRER LE TEXTE</button></section>}
