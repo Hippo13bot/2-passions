@@ -88,7 +88,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('media-originals','media-originals',false,52428800,array['image/jpeg','image/png','image/webp','image/heic','video/mp4','audio/mpeg','application/pdf'])
 on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('media-public','media-public',true,26214400,array['image/jpeg','image/png','image/webp','video/mp4','audio/mpeg','application/pdf'])
+values ('media-public','media-public',false,26214400,array['image/jpeg','image/png','image/webp','video/mp4','audio/mpeg','application/pdf'])
 on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "team reads media originals" on storage.objects;
@@ -103,6 +103,26 @@ create policy "editors update media originals" on storage.objects for update to 
 drop policy if exists "administrators delete media originals" on storage.objects;
 create policy "administrators delete media originals" on storage.objects for delete to authenticated
   using (bucket_id = 'media-originals' and public.is_administrator());
+drop policy if exists "public reads approved derivatives" on storage.objects;
+create policy "public reads approved derivatives" on storage.objects for select to anon, authenticated
+  using (bucket_id = 'media-public' and exists (
+    select 1 from public.media_assets m join public.entities e on e.id = m.entity_id
+    where m.public_derivative_path = name and m.editorial_status = 'published'
+      and m.rights_status = 'cleared' and m.consent_reviewed and m.anonymization_reviewed
+      and e.editorial_status = 'published'
+  ));
+drop policy if exists "editors read all derivatives" on storage.objects;
+create policy "editors read all derivatives" on storage.objects for select to authenticated
+  using (bucket_id = 'media-public' and public.can_edit_content());
+
+drop policy if exists "public reads sources attached to published entities" on public.sources;
+create policy "public reads sources attached to published records" on public.sources
+  for select using (
+    exists (select 1 from public.entity_sources es join public.entities e on e.id = es.entity_id
+      where es.source_id = sources.id and e.editorial_status = 'published')
+    or exists (select 1 from public.observatory_sources os join public.observatory_entries o on o.id = os.entry_id
+      where os.source_id = sources.id and o.editorial_status = 'published')
+  );
 drop policy if exists "editors upload public derivatives" on storage.objects;
 create policy "editors upload public derivatives" on storage.objects for insert to authenticated
   with check (bucket_id = 'media-public' and public.can_edit_content());
