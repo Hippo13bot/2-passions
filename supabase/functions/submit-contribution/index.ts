@@ -33,6 +33,8 @@ Deno.serve(async (req:Request) => {
     if (!verification.ok) return json(502, { error:'anti_bot_verification_unavailable' })
     const result = await verification.json()
     if (!result.success) return json(403, { error:'anti_bot_verification_failed' })
+    const allowedHosts = (Deno.env.get('TURNSTILE_ALLOWED_HOSTNAMES') || '').split(',').map((x:string)=>x.trim()).filter(Boolean)
+    if (allowedHosts.length && !allowedHosts.includes(result.hostname)) return json(403, { error:'anti_bot_hostname_not_allowed' })
     const projectUrl = Deno.env.get('SUPABASE_URL')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!projectUrl || !serviceKey) return json(503, { error:'server_not_configured' })
