@@ -1,22 +1,19 @@
 # Modèle documentaire
 
-## Dossiers de mobilisation
-Contexte, période, territoires, revendications, acteurs collectifs, événements liés, état documentaire et bilan.
-
-## Fiches établissements
-Identité officielle, territoire, contexte antérieur, revendications locales, chronologie, réponses institutionnelles, archives, interventions médiatiques, outils d'organisation, initiatives de solidarité et statistiques sourcées. Aucun nom de mineur ni contact personnel.
-
-## Événements
-Date, type, description, statut (annoncé, confirmé, reporté, annulé), conséquences documentées, sources associées et niveau de vérification. Les annonces futures ne doivent pas exposer des détails opérationnels sensibles.
+## Dossiers et événements
+Mobilisation, établissement, événement, organisation, collectif, document et ressource. Les événements portent un statut annoncé, confirmé, reporté, annulé ou non confirmé. La chronologie publique ne lit que les dossiers publiés.
 
 ## Sources
-Titre, URL originale, auteur/organisme, date de publication, date de consultation, type, notes, statut de vérification et relations aux dossiers.
+Titre, URL, auteur/organisme, date de publication, date de consultation, type, notes, statut de vérification et relations aux dossiers ou observatoires.
+
+## Observatoires
+Thème (répression, éducation, médias, libertés publiques), titre, affirmation, indicateur, valeur, unité, période, périmètre géographique, méthodologie, limites, niveau de vérification et sources associées.
 
 ## Médias
-Fichier original privé, dérivé public anonymisé, crédit, provenance, droits, consentement et contrôle de l'anonymisation. Ne jamais servir directement l'original privé au public.
+Fichier original privé, dérivé privé, crédit, provenance, droits, consentement, anonymisation, auteur de l’import et validation de publication. Le public obtient uniquement un lien signé vers un dérivé validé.
 
 ## Contributions
-Texte reçu, type, dossier concerné, source éventuelle, statut de modération et note interne. Les coordonnées de contact, si elles sont réellement nécessaires, sont séparées de la publication et accessibles au minimum de personnes.
+Type, message, source éventuelle, contact facultatif, anonymat souhaité et statut de modération. Les contributions publiques passent par Turnstile côté serveur et ne sont jamais publiées automatiquement.
 
 ## Statistiques
-Aucune table de chiffres fictifs. Les indicateurs doivent être calculés à partir d'événements publiés et accompagnés de leur méthode, période, périmètre et limites. Les estimations doivent être typées et attribuées à leur source.
+Aucune table de chiffres fictifs. Les indicateurs doivent être calculés à partir d’événements publiés et accompagnés de leur méthode, période, périmètre et limites.

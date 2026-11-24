@@ -1,30 +1,26 @@
 # Architecture
 
 ## Deux applications séparées
+- `apps/public` : consultation des contenus publiés, recherche, carte, chronologie, observatoires et contributions.
+- `apps/admin` : authentification Supabase, CMS, médiathèque et modération.
+- Supabase : PostgreSQL, Auth, Storage privé et Edge Functions.
+- GitHub Pages : site public ; Cloudflare Pages : administration.
 
-- `apps/public` : consultation publique, aucun privilège d'écriture sur les contenus éditoriaux.
-- `apps/admin` : interface privée, authentification Supabase et contrôle des rôles en base.
-- Supabase : PostgreSQL, Auth et Storage partagés.
-- GitHub : code source et déploiement du site public.
-- Cloudflare Pages : hébergement indépendant de l'administration.
+## Publication éditoriale
+1. Un éditeur crée un dossier et associe des sources.
+2. Un vérificateur qualifie le niveau de preuve.
+3. L’éditeur publie le dossier.
+4. Le public ne lit que les enregistrements publiés.
+5. Les contributions arrivent par une Edge Function protégée par Turnstile et restent privées jusqu’à modération.
 
-## Flux de publication
+## Carte et géographie
+`published_map_points()` n’expose que les lieux de dossiers publiés. Les lieux masqués sont exclus et les coordonnées approximatives sont arrondies côté serveur. La carte métropolitaine est accompagnée d’une liste dédiée aux territoires ultramarins.
 
-1. Un éditeur crée un dossier en brouillon.
-2. Il ajoute des événements, documents, médias et sources.
-3. Un vérificateur contrôle les affirmations et les références.
-4. Un éditeur autorisé publie.
-5. Le site public ne lit que les contenus dont le statut est `published`.
-6. Les contributions externes arrivent dans une file privée et ne deviennent jamais publiques automatiquement.
+## Médias
+Les originaux et dérivés sont dans des buckets privés. La médiathèque produit un dérivé JPEG avec pixelisation manuelle de zones sélectionnées. Une URL signée n’est délivrée au public que si le média et son dossier sont publiés, les droits sont validés, et le consentement et l’anonymisation sont contrôlés.
 
-## Entités principales
+## Observatoires
+Les indicateurs thématiques sont stockés séparément, associés à des sources, une période, un périmètre, une méthodologie, des limites et un statut de vérification. La publication est bloquée sans source ni méthode.
 
-Mobilisation, établissement, événement, organisation, collectif, document et ressource sont représentés dans `entities` par un type et un slug. Les relations permettent de relier les établissements aux événements, aux sources et aux autres acteurs.
-
-## Géographie
-
-La latitude et la longitude sont facultatives. Par défaut, la précision est masquée. Une localisation publique doit faire l'objet d'une décision éditoriale spécifique. Ne jamais cartographier une personne, un déplacement individuel ou un point sensible.
-
-## Recherche
-
-La première version utilise une recherche locale de démonstration. La recherche full-text PostgreSQL, les filtres combinés et les facettes territoriales sont à développer après validation du schéma et des données.
+## Sécurité
+Les politiques RLS différencient administrateur, éditeur, vérificateur, modérateur et visiteur anonyme. Les Edge Functions seules utilisent la clé de service. Voir `SECURITY.md` et `IMPLEMENTATION-MODULES.md`.
