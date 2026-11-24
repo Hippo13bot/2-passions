@@ -10,7 +10,8 @@
 - [x] Contrôle du profil avant accès à l’administration.
 - [x] Rôles de base et migration RLS séparée.
 - [ ] Appliquer et tester les migrations sur une instance de préproduction.
-- [x] Script d’intégration RLS pour les rôles et l’accès anonyme.\n- [ ] Exécuter les tests sur l’instance Supabase de préproduction.
+- [x] Script d’intégration RLS pour les rôles et l’accès anonyme.
+- [ ] Exécuter les tests sur l’instance Supabase de préproduction.
 - [ ] Buckets Storage privés et dérivés publics validés.
 
 ## Lot 2 — CMS éditorial
@@ -33,11 +34,13 @@
 ## Lot 4 — Archives et participation
 - [x] Bibliothèque média, métadonnées, droits et crédits.
 - [x] Original privé, dérivé privé signé après validation et contrôle humain par pixelisation manuelle.
-- [x] Formulaire public de contribution protégé par Turnstile et file de modération.\n- [ ] Formulaires de signalement/retrait dédiés.
-- [ ] Anti-robot, limitation de débit et procédure de retrait.
+- [x] Formulaire public de contribution protégé par Turnstile et file de modération.
+- [ ] Formulaires de signalement/retrait dédiés.
+- [x] Vérification anti-robot Turnstile côté serveur.\n- [ ] Limitation de débit complémentaire et procédure de retrait.
 
 ## Lot 5 — Observatoires et données
-- [x] Quatre observatoires thématiques avec sources, méthode et limites.\n- [ ] Tableaux statistiques agrégés et séries temporelles.
+- [x] Quatre observatoires thématiques avec sources, méthode et limites.
+- [ ] Tableaux statistiques agrégés et séries temporelles.
 - [ ] Méthodes, périmètres, limites et historique des indicateurs.
 - [ ] Veille conforme aux conditions des sources.
 - [ ] Tests de sauvegarde et restauration.
