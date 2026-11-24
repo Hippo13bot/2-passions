@@ -37,7 +37,8 @@
 - [x] Formulaire public de contribution protégé par Turnstile et file de modération.
 - [ ] Formulaires de signalement/retrait dédiés.
 - [x] Vérification anti-robot Turnstile côté serveur.
-- [x] Limitation de débit par empreinte IP (5 envois / 15 minutes).\n- [ ] Procédure de retrait et signalement dédiée.
+- [x] Limitation de débit par empreinte IP (5 envois / 15 minutes).
+- [ ] Procédure de retrait et signalement dédiée.
 
 ## Lot 5 — Observatoires et données
 - [x] Quatre observatoires thématiques avec sources, méthode et limites.
