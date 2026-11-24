@@ -81,7 +81,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
     pages.push(`[Page ${pageNumber}]\n${pageText}`)
    }
    setSelected(item);setText(pages.join('\n\n'))
-   onMessage(`Extraction terminée : ${pageCount} page(s) traitée(s)${pdf.numPages>pageCount?' (limite de 15 pages par traitement)':''}. Relis le texte avant de l’enregistrer.`)
+   onMessage(`Extraction terminée : ${pageCount} page(s) traitée(s)${pdf.numPages>pageCount?' (seules les 15 premières pages sont traitées dans cette version)':''}. Relis le texte avant de l’enregistrer.`)
   }catch(error){onMessage('Extraction PDF impossible : '+(error instanceof Error?error.message:'erreur inconnue'))}
   finally{if(worker)await worker.terminate();setBusy(false)}
  }
