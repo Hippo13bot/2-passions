@@ -34,6 +34,11 @@ select cron.schedule(
           select decrypted_secret
           from vault.decrypted_secrets
           where name = '2passions_service_role_key'
+        ),
+        'apikey', (
+          select decrypted_secret
+          from vault.decrypted_secrets
+          where name = '2passions_service_role_key'
         )
       ),
       body := '{"force": false}'::jsonb,
