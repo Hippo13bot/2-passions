@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Activity, Plus, RefreshCw, ExternalLink, Check, X, Rss } from 'lucide-react'
+import { Plus, RefreshCw, ExternalLink, Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 type Feed = { id:string; name:string; feed_url:string; publisher:string|null; topic:string|null; enabled:boolean; last_checked_at:string|null; last_error:string|null }
