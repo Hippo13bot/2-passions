@@ -85,62 +85,13 @@ create trigger observatory_publication_checks before insert or update on public.
   for each row execute function public.enforce_observatory_publication();
 
 -- Le média ne peut être publié que si le dossier parent est déjà publié.
-create or replace function public.enforce_media_publication_checks()
-returns trigger language plpgsql set search_path = public as $
-begin
-  if new.editorial_status = 'published' and (new.public_derivative_path is null or new.consent_reviewed is not true
-     or new.anonymization_reviewed is not true or new.rights_status <> 'cleared') then
-    raise exception 'Publication refusée : dérivé, droits, consentement et anonymisation doivent être validés.';
-  end if;
-  if new.editorial_status = 'published' and not exists(select 1 from public.entities e where e.id = new.entity_id and e.editorial_status = 'published') then
-    raise exception 'Publication média refusée : le dossier associé doit être publié.';
-  end if;
-  if new.editorial_status = 'published' then
-    new.reviewed_at := now();
-    new.reviewed_by := auth.uid();
-  end if;
-  return new;
-end;
-$;
-
--- Les contributions passent par une Edge Function protégée par Cloudflare Turnstile.
--- Cela évite de laisser l'API publique insérer directement dans la table privée.
-drop policy if exists "anyone can submit contribution" on public.contributions;
-create index if not exists observatory_topic_status_idx on public.observatory_entries(topic, editorial_status, period_end desc);
-create index if not exists entities_public_timeline_idx on public.entities(entity_type, editorial_status, event_date desc);
-
--- Une publication média exige les validations documentaires et humaines.
-drop policy if exists "public reads approved media derivatives" on public.media_assets;
-create policy "public reads approved media derivatives" on public.media_assets
-  for select using (editorial_status = 'published' and public_derivative_path is not null
-    and consent_reviewed = true and anonymization_reviewed = true and rights_status = 'cleared'
-    and exists (select 1 from public.entities e where e.id = entity_id and e.editorial_status = 'published'));
-
-create or replace function public.enforce_media_publication_checks()
-returns trigger language plpgsql set search_path = public as $$
-begin
-  if new.editorial_status = 'published' and (new.public_derivative_path is null or new.consent_reviewed is not true
-     or new.anonymization_reviewed is not true or new.rights_status <> 'cleared') then
-    raise exception 'Publication refusée : dérivé, droits, consentement et anonymisation doivent être validés.';
-  end if;
-  if new.editorial_status = 'published' then
-    new.reviewed_at := now();
-    new.reviewed_by := auth.uid();
-  end if;
-  return new;
-end;
-$$;
-drop trigger if exists media_publication_checks on public.media_assets;
-create trigger media_publication_checks before insert or update on public.media_assets
-  for each row execute function public.enforce_media_publication_checks();
-
 -- Buckets : originaux non publics, dérivés accessibles uniquement après validation éditoriale.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('media-originals','media-originals',false,52428800,array['image/jpeg','image/png','image/webp','image/heic','video/mp4','audio/mpeg','application/pdf'])
 on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('media-public','media-public',false,26214400,array['image/jpeg','image/png','image/webp','video/mp4','audio/mpeg','application/pdf'])
-on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "team reads media originals" on storage.objects;
 create policy "team reads media originals" on storage.objects for select to authenticated
