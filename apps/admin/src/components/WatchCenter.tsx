@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Plus, RefreshCw, ExternalLink, Check, X } from 'lucide-react'
+import { Plus, RefreshCw, ExternalLink, Check, X, Pause, Play } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 type Feed = { id:string; name:string; feed_url:string; publisher:string|null; topic:string|null; enabled:boolean; last_checked_at:string|null; last_error:string|null }
@@ -43,6 +43,7 @@ export default function WatchCenter({ profileId, canEdit, onMessage }:{profileId
     if(error)onMessage('Veille non exécutée : '+error.message)
     else{onMessage(`Veille terminée : ${data?.results?.reduce((n:number,x:any)=>n+(x.detected||0),0)||0} nouveauté(s) détectée(s).`);await load()}
   }
+  async function toggleFeed(feed:Feed){if(!supabase)return;const {error}=await supabase.from('watch_sources').update({enabled:!feed.enabled}).eq('id',feed.id);if(error)onMessage('Modification du flux impossible : '+error.message);else await load()}
   async function setStatus(item:Item,status:string){
     if(!supabase)return
     const {error}=await supabase.from('watch_items').update({status,reviewed_by:profileId,reviewed_at:new Date().toISOString()}).eq('id',item.id)
@@ -70,7 +71,7 @@ export default function WatchCenter({ profileId, canEdit, onMessage }:{profileId
         <div className="form-grid"><label>ÉDITEUR<input value={publisher} onChange={e=>setPublisher(e.target.value)} placeholder="Organisation ou média"/></label><label>THÈME<select value={topic} onChange={e=>setTopic(e.target.value)}>{topics.map(x=><option key={x}>{x}</option>)}</select></label></div>
         <button className="primary" disabled={busy}><Plus size={15}/> AJOUTER À LA VEILLE</button>
       </form>}
-      <div className="watch-feed-list">{feeds.map(feed=><div className="watch-feed" key={feed.id}><div><b>{feed.name}</b><small>{feed.publisher||feed.feed_url}</small><small>Dernière vérification : {feed.last_checked_at?new Date(feed.last_checked_at).toLocaleString('fr-FR'):'Jamais'}</small>{feed.last_error&&<small className="watch-error">{feed.last_error}</small>}</div><span className={'status-pill '+(feed.enabled?'published':'')}>{feed.enabled?'ACTIF':'PAUSÉ'}</span></div>)}{!feeds.length&&<p className="empty-state">Aucun flux enregistré. Ajoute une adresse RSS ou Atom pour commencer.</p>}</div>
+      <div className="watch-feed-list">{feeds.map(feed=><div className="watch-feed" key={feed.id}><div><b>{feed.name}</b><small>{feed.publisher||feed.feed_url}</small><small>Dernière vérification : {feed.last_checked_at?new Date(feed.last_checked_at).toLocaleString('fr-FR'):'Jamais'}</small>{feed.last_error&&<small className="watch-error">{feed.last_error}</small>}</div><span className={'status-pill '+(feed.enabled?'published':'')}>{feed.enabled?'ACTIF':'PAUSÉ'}</span>{canEdit&&<button className="icon-button" onClick={()=>void toggleFeed(feed)} title={feed.enabled?'Mettre en pause':'Réactiver'}>{feed.enabled?<Pause size={15}/>:<Play size={15}/>}</button>}</div>)}{!feeds.length&&<p className="empty-state">Aucun flux enregistré. Ajoute une adresse RSS ou Atom pour commencer.</p>}</div>
     </section>
     <section className="admin-panel">
       <div className="panel-heading"><div><span className="admin-kicker">DÉTECTIONS</span><h2>Publications repérées</h2></div><span className="status-pill">{items.length} éléments</span></div>
