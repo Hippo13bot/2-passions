@@ -31,12 +31,12 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
   const {data,error}=await supabase.from('sources').insert({
    title:title||file.name,source_type:'document',publisher:publisher||null,published_on:date||null,
    file_name:file.name,mime_type:mimeType,storage_path:path,
-   extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),
+   extracted_text:extracted||null,extraction_status:isText?'extracted':(mimeType.startsWith('image/')||mimeType==='application/pdf'?'needs_ocr':'uploaded'),
    notes:'Document importé dans le centre documentaire.',created_by:profileId
   }).select('id').single()
   if(error){await supabase.storage.from('source-documents').remove([path]);setBusy(false);onMessage('Enregistrement de la source impossible : '+error.message);return}
-  await supabase.from('source_documents').insert({source_id:data.id,storage_path:path,file_name:file.name,mime_type:file.type||'application/octet-stream',file_size:file.size,extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),created_by:profileId})
-  setBusy(false);setFile(null);setTitle('');setPublisher('');setDate('');onMessage(isText?'Document importé et texte indexé.':'Document importé. Extraction OCR à effectuer avant de pouvoir exploiter son contenu textuel.');await load()
+  await supabase.from('source_documents').insert({source_id:data.id,storage_path:path,file_name:file.name,mime_type:mimeType,file_size:file.size,extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),created_by:profileId})
+  setBusy(false);setFile(null);setTitle('');setPublisher('');setDate('');onMessage(isText?'Document importé et texte indexé.':mimeType.startsWith('image/')?'Image importée. Lance l’OCR puis relis le texte reconnu.':'Document importé. Le texte peut être ajouté dans l’éditeur documentaire.');await load()
  }
  async function runImageOcr(item:Source){
   if(!supabase||!item.storage_path)return
