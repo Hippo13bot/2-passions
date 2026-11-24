@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 declare global { interface Window { Tesseract?: { createWorker:(language:string)=>Promise<{recognize:(input:Blob)=>Promise<{data:{text:string}}>;terminate:()=>Promise<void>}> } } }
 type Source={id:string;title:string;file_name:string|null;mime_type:string|null;storage_path:string|null;extracted_text:string|null;abstract:string|null;extraction_status:string;created_at:string}
 const maxSize=50*1024*1024
+const mimeByExtension:Record<string,string>={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',tif:'image/tiff',tiff:'image/tiff',txt:'text/plain',md:'text/markdown',csv:'text/csv',html:'text/html',htm:'text/html',rtf:'application/rtf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',odt:'application/vnd.oasis.opendocument.text',ods:'application/vnd.oasis.opendocument.spreadsheet',odp:'application/vnd.oasis.opendocument.presentation'}
 export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:string;canEdit:boolean;onMessage:(message:string)=>void}){
  const [items,setItems]=useState<Source[]>([])
  const [file,setFile]=useState<File|null>(null)
@@ -21,13 +22,15 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
   if(file.size>maxSize){onMessage('Fichier trop volumineux : limite 50 Mo.');return}
   setBusy(true)
   const path=`${profileId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`
-  const {error:storageError}=await supabase.storage.from('source-documents').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false})
+  const extension=file.name.split('.').pop()?.toLowerCase()||''
+  const mimeType=(!file.type||file.type==='application/octet-stream')?(mimeByExtension[extension]||'application/octet-stream'):file.type
+  const {error:storageError}=await supabase.storage.from('source-documents').upload(path,file,{contentType:mimeType,upsert:false})
   if(storageError){setBusy(false);onMessage('Téléversement impossible : '+storageError.message);return}
   const isText=file.type.startsWith('text/')||/\.(txt|md|csv|html?)$/i.test(file.name)
   const extracted=isText?await file.text():''
   const {data,error}=await supabase.from('sources').insert({
    title:title||file.name,source_type:'document',publisher:publisher||null,published_on:date||null,
-   file_name:file.name,mime_type:file.type||'application/octet-stream',storage_path:path,
+   file_name:file.name,mime_type:mimeType,storage_path:path,
    extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),
    notes:'Document importé dans le centre documentaire.',created_by:profileId
   }).select('id').single()
@@ -64,7 +67,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
   <section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">IMPORT DOCUMENTAIRE</span><h2>Ajouter un document</h2></div><FileText/></div>
    <p className="document-note">PDF, images, textes et documents bureautiques acceptés jusqu'à 50 Mo. Les images peuvent être lues par OCR dans le navigateur ; le texte doit être relu. Les PDF sont conservés et leur texte peut être collé dans l'éditeur. Les originaux restent privés.</p>
    <form onSubmit={upload}>
-    <label>FICHIER<input type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.txt,.md,.csv,.html,.htm,.rtf,.doc,.docx,.pptx,.xlsx" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
+    <label>FICHIER<input type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.txt,.md,.csv,.html,.htm,.rtf,.doc,.docx,.pptx,.xlsx,.odt,.ods,.odp" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
     <label>TITRE DOCUMENTAIRE<input value={title} onChange={e=>setTitle(e.target.value)} placeholder={file?.name||'Titre du document'}/></label>
     <div className="form-grid"><label>AUTEUR / ORGANISATION<input value={publisher} onChange={e=>setPublisher(e.target.value)}/></label><label>DATE DE PUBLICATION<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
     {file&&<p className="document-note">{file.name} · {(file.size/1024/1024).toFixed(2)} Mo · {file.type||'type inconnu'}</p>}
