@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CheckCircle2,
-  ChevronRight, ExternalLink, FileText, Image as ImageIcon, MapPinned, Menu,
+  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CalendarDays,
+  ExternalLink, FileText, Image as ImageIcon, MapPinned, Menu,
   Search, ShieldCheck, X
 } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
@@ -187,8 +187,9 @@ export default function App() {
       setMobileMenu(false)
     }
     window.addEventListener('hashchange', syncRoute)
+    window.addEventListener('popstate', syncRoute)
     if (items.length) syncRoute()
-    return () => window.removeEventListener('hashchange', syncRoute)
+    return () => { window.removeEventListener('hashchange', syncRoute); window.removeEventListener('popstate', syncRoute) }
   }, [items])
 
   const types = useMemo(() => Array.from(new Set(items.map((item) => item.entity_type))).sort(), [items])
@@ -321,7 +322,7 @@ export default function App() {
       <div className="archive-footnote"><ShieldCheck size={16}/> Les contenus publiés sont identifiés par leur statut de vérification. Les brouillons et contributions privées ne sont jamais visibles dans cette base.</div>
     </section>
   } else if (page === 'explorer') {
-    content = <div className="explorer-page"><div className="page-heading section-wrap"><div className="section-index">02 — LIRE LE TERRITOIRE ET LE TEMPS</div><h1>EXPLORER<span className="red-dot">.</span></h1><p>Une lecture géographique et chronologique des dossiers rendus publics. Les localisations sensibles ou masquées ne sont pas exposées.</p></div><MapTimeline/></div>
+    content = <div className="explorer-page"><div className="page-heading section-wrap"><div className="section-index">02 — LIRE LE TERRITOIRE ET LE TEMPS</div><h1>EXPLORER<span className="red-dot">.</span></h1><p>Une lecture géographique et chronologique des dossiers rendus publics. Les localisations sensibles ou masquées ne sont pas exposées.</p></div><MapTimeline onOpen={(id) => { const match = items.find((item) => item.id === id); if (match) void openItem(match) }}/></div>
   } else if (page === 'comprendre') {
     content = <div className="understand-page"><div className="page-heading section-wrap"><div className="section-index">03 — DONNÉES, MÉTHODES ET SOURCES</div><h1>COMPRENDRE<span className="red-dot">.</span></h1><p>Les chiffres et les récits ne se suffisent pas à eux-mêmes. Chaque information doit être replacée dans son périmètre, sa méthode et ses limites.</p></div>
       <Observatories/>
