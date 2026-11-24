@@ -36,7 +36,8 @@
 - [x] Original privé, dérivé privé signé après validation et contrôle humain par pixelisation manuelle.
 - [x] Formulaire public de contribution protégé par Turnstile et file de modération.
 - [ ] Formulaires de signalement/retrait dédiés.
-- [x] Vérification anti-robot Turnstile côté serveur.\n- [ ] Limitation de débit complémentaire et procédure de retrait.
+- [x] Vérification anti-robot Turnstile côté serveur.
+- [ ] Limitation de débit complémentaire et procédure de retrait.
 
 ## Lot 5 — Observatoires et données
 - [x] Quatre observatoires thématiques avec sources, méthode et limites.
