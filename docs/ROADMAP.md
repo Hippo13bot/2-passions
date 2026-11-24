@@ -1,40 +1,45 @@
 # Feuille de route
 
-## Lot 0 — Socle livré dans ce ZIP
-- Deux applications web séparées.
-- Charte graphique de base (Anton, Inter, IBM Plex Mono ; rouge #C62026, charbon #111111, blanc cassé #F4F2EE).
-- Première page publique avec contenus de démonstration clairement signalés.
-- Première interface d'administration et formulaire de connexion Supabase.
-- Schéma SQL initial et documentation.
+## Lot 0 — Socle technique
+- [x] Deux applications séparées et monorepo.
+- [x] Identité graphique initiale et architecture Supabase.
+- [x] Documentation de cadrage.
 
-## Lot 1 — Infrastructure réelle
-- Créer Supabase et appliquer la migration.
-- Revoir les RLS et politiques Storage.
-- Créer comptes et rôles.
-- Vérifier les builds et les tests de sécurité.
+## Lot 1 — Infrastructure et accès
+- [x] Authentification Supabase avec session persistante.
+- [x] Contrôle du profil avant accès à l’administration.
+- [x] Rôles de base et migration RLS séparée.
+- [ ] Appliquer et tester les migrations sur une instance de préproduction.
+- [ ] Tests RLS automatisés par rôle et accès anonyme.
+- [ ] Buckets Storage privés et dérivés publics validés.
 
 ## Lot 2 — CMS éditorial
-- CRUD complet pour dossiers, établissements, événements, organisations, documents et ressources.
-- Gestion des sources et liens.
-- Workflow brouillon → vérification → publication.
-- Historique de modifications et journal d'audit.
+- [x] CRUD initial des entités documentaires.
+- [x] Ajout de sources documentaires.
+- [x] File de modération des contributions.
+- [x] Journalisation des changements d’entités et de sources.
+- [ ] Relations entre entités, événements et sources dans l’interface.
+- [ ] Historique détaillé et restauration de versions.
+- [ ] Fiches établissements et organisations complètes.
 
-## Lot 3 — Site public connecté
-- Pages détaillées et relations entre entités.
-- Recherche PostgreSQL, filtres combinés et facettes.
-- Carte et chronologie alimentées uniquement par des données publiées.
-- Pages établissements structurées selon le cahier des charges.
+## Lot 3 — Site public
+- [x] Lecture des contenus publiés depuis Supabase.
+- [x] Recherche et filtres par type.
+- [x] Fiche documentaire et sources associées.
+- [ ] Navigation par URL, pages partageables et référencement.
+- [ ] Chronologie interactive et carte territoriale sécurisée.
+- [ ] Recherche plein texte et facettes.
 
-## Lot 4 — Archives visuelles et participation
-- Upload sécurisé, dérivés, crédits et droits.
-- Outil d'anonymisation avec validation humaine et export.
-- Formulaires de contribution, signalement et correction.
-- Modération et retrait.
+## Lot 4 — Archives et participation
+- [ ] Bibliothèque média, métadonnées, droits et crédits.
+- [ ] Original privé, dérivé public et contrôle humain de l’anonymisation.
+- [ ] Formulaire public de contribution, signalement et correction.
+- [ ] Anti-robot, limitation de débit et procédure de retrait.
 
-## Lot 5 — Modules avancés
-- Statistiques méthodologiquement documentées.
-- Solidarité et mise en relation sécurisée.
-- Veille RSS et collecte conforme aux conditions des plateformes.
-- Détection de doublons et assistance à la classification, toujours avec validation humaine.
+## Lot 5 — Observatoires et données
+- [ ] Observatoires thématiques et statistiques sourcées.
+- [ ] Méthodes, périmètres, limites et historique des indicateurs.
+- [ ] Veille conforme aux conditions des sources.
+- [ ] Tests de sauvegarde et restauration.
 
-Aucune étape n'est réputée terminée sans tests et validation.
+Aucune étape n’est réputée terminée sans tests et validation éditoriale, technique et juridique.
