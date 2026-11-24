@@ -39,3 +39,14 @@ values ('UUID_DU_COMPTE_AUTH', 'Administration', 'administrator');
 8. Configurer VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY pour les deux applications.
 
 Ne jamais placer une clé service_role dans une application navigateur.
+
+## Modules ajoutés dans la branche `reprise/modules-documentaires`
+
+- Carte publique avec coordonnées masquées ou arrondies et liste ultramarine.
+- Chronologie des événements publiés avec statut.
+- Quatre observatoires avec méthodologie, limites, sources et contrôle de publication.
+- Médiathèque : originaux privés, dérivé privé, pixelisation manuelle, validation des droits et publication conditionnée.
+- Formulaire de contribution protégé par Cloudflare Turnstile via Edge Function.
+- Script d’intégration RLS pour les rôles et l’accès anonyme.
+
+La migration `0003_documentary_modules_storage.sql` doit être appliquée après 0001 et 0002. Le test RLS n’a pas été exécuté sur le projet Supabase réel : il doit être lancé sur une instance de préproduction avec les quatre comptes de test. Voir `docs/IMPLEMENTATION-MODULES.md`.
