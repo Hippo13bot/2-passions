@@ -37,7 +37,7 @@ Formats pris en charge par l’éditeur actuel : JPEG, PNG et WebP. L’original
 
 ## 5. Contributions publiques et Turnstile
 
-Le formulaire public ne peut envoyer une contribution qu’après validation Cloudflare Turnstile. L’Edge Function `submit-contribution` vérifie le jeton côté serveur puis insère une contribution `pending` avec la clé de service. La clé de service n’est jamais envoyée au navigateur.
+Le formulaire public ne peut envoyer une contribution qu’après validation Cloudflare Turnstile. L’Edge Function `submit-contribution` vérifie le jeton côté serveur, applique une limite de cinq envois par empreinte IP HMAC-SHA-256 (fenêtre de quinze minutes), puis insère une contribution `pending` avec la clé de service. Le secret Turnstile sert de clé HMAC ; seule l’empreinte est conservée, jamais l’adresse IP brute. La clé de service n’est jamais envoyée au navigateur.
 
 ### Configuration
 
