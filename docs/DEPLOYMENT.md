@@ -18,3 +18,10 @@ Le site public peut être dans un dépôt public sur GitHub Free. Les données p
 
 ## Variables
 Seules l'URL Supabase et la clé `anon` sont prévues dans le navigateur. La clé `service_role` est strictement serveur et ne doit jamais être ajoutée à ces applications.
+
+
+## Contribution publique et Turnstile
+
+Configurer la variable GitHub Actions `VITE_TURNSTILE_SITE_KEY` pour le site public. Déployer `supabase/functions/submit-contribution` avec `supabase functions deploy submit-contribution`, puis définir les secrets `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES` et `PUBLIC_SITE_ORIGIN` avec `supabase secrets set`. La clé secrète Turnstile et la clé `service_role` restent exclusivement côté serveur.
+
+Appliquer les migrations 0001, 0002 et 0003 dans cet ordre. La migration 0003 crée les buckets privés et les politiques Storage. Voir `docs/IMPLEMENTATION-MODULES.md`.
