@@ -358,7 +358,7 @@ export default function App() {
     </header>
     <main key={page} aria-label={pageTitle[page]}>{content}</main>
     <footer className="site-footer">
-      <button className="brand footer-brand" onClick={() => navigate('accueil')}><span className="brand-mark">2</span><span>PASSIONS<span>.</span></span></button>
+      <button className="brand footer-brand" onClick={() => navigate('accueil')}><BrandMark/><span>PASSIONS<span>.</span></span></button>
       <div className="footer-signature">ARCHIVER.<br/>DOCUMENTER.<br/>TRANSMETTRE.</div>
       <div className="footer-nav">{pages.map((entry) => <button key={entry.id} onClick={() => navigate(entry.id)}>{entry.label}</button>)}</div>
       <div className="footer-note"><span>ARCHIVE DOCUMENTAIRE INDÉPENDANTE</span><small>Les contenus sont publiés après examen éditorial. Les sources et les limites doivent rester consultables.</small><small>© 2 PASSIONS</small></div>
