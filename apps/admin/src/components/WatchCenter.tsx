@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Plus, RefreshCw, ExternalLink, Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -27,7 +27,7 @@ export default function WatchCenter({ profileId, canEdit, onMessage }:{profileId
     setLoading(false)
   },[onMessage])
   useEffect(()=>{void load()},[load])
-  async function addFeed(e:React.FormEvent){
+  async function addFeed(e:FormEvent){
     e.preventDefault();if(!supabase||!canEdit)return
     setBusy(true)
     const {error}=await supabase.from('watch_sources').insert({name,feed_url:url,publisher:publisher||null,topic,created_by:profileId})
