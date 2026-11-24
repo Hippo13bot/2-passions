@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, ExternalLink } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 type Entry={id:string;topic:string;title:string;claim:string;indicator:string|null;value_label:string|null;unit:string|null;period_start:string|null;period_end:string|null;geography:string|null;methodology:string;limitations:string|null;verification_status:string}
 type Source={id:string;title:string;source_url:string|null;publisher:string|null}
