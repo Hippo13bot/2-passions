@@ -25,3 +25,15 @@ Seules l'URL Supabase et la clé `anon` sont prévues dans le navigateur. La cl�
 Configurer la variable GitHub Actions `VITE_TURNSTILE_SITE_KEY` pour le site public. Déployer `supabase/functions/submit-contribution` avec `supabase functions deploy submit-contribution`, puis définir les secrets `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES` et `PUBLIC_SITE_ORIGIN` avec `supabase secrets set`. La clé secrète Turnstile et la clé `service_role` restent exclusivement côté serveur.
 
 Appliquer les migrations 0001, 0002 et 0003 dans cet ordre. La migration 0003 crée les buckets privés et les politiques Storage. Voir `docs/IMPLEMENTATION-MODULES.md`.
+
+
+## Déploiement automatique de l'administration — GitHub Actions
+
+Le workflow `.github/workflows/deploy-admin.yml` compile puis publie `apps/admin/dist` sur le projet Cloudflare Pages `2-passions-admin` à chaque modification de l'administration sur `main`.
+
+Avant le premier déploiement, ajouter dans **GitHub → Settings → Secrets and variables → Actions → New repository secret** :
+
+- `CLOUDFLARE_API_TOKEN` : jeton API Cloudflare autorisé à gérer Cloudflare Pages (permission Account / Cloudflare Pages / Edit).
+- `CLOUDFLARE_ACCOUNT_ID` : identifiant du compte Cloudflare.
+
+Ces valeurs ne doivent jamais être écrites dans le code ni communiquées dans une conversation. Le workflow échoue avec un message explicite si un secret manque. Le site public conserve son workflow GitHub Pages indépendant.
