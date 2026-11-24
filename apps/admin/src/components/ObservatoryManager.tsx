@@ -1,0 +1,206 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { Plus, Pencil, Activity } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+
+type Entry = {
+  id: string; topic: string; title: string; claim: string; indicator: string | null
+  value_label: string | null; unit: string | null; period_start: string | null
+  period_end: string | null; geography: string | null; methodology: string
+  limitations: string | null; verification_status: string; editorial_status: string
+}
+type Source = { id: string; title: string }
+const topics = [
+  { key: 'repression', label: 'Répression' },
+  { key: 'education', label: 'Éducation' },
+  { key: 'media', label: 'Médias' },
+  { key: 'public_freedoms', label: 'Libertés publiques' }
+]
+const blank = {
+  topic: 'education', title: '', claim: '', indicator: '', value_label: '', unit: '',
+  period_start: '', period_end: '', geography: 'France', methodology: '',
+  limitations: '', verification_status: 'unverified', editorial_status: 'draft'
+}
+
+export default function ObservatoryManager({ profileId, canEdit, onMessage }: {
+  profileId: string; canEdit: boolean; onMessage: (message: string) => void
+}) {
+  const [entries, setEntries] = useState<Entry[]>([])
+  const [sources, setSources] = useState<Source[]>([])
+  const [sourceId, setSourceId] = useState('')
+  const [form, setForm] = useState({ ...blank })
+  const [editing, setEditing] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function refresh() {
+    if (!supabase) return
+    const [entryResult, sourceResult] = await Promise.all([
+      supabase.from('observatory_entries').select('*').order('period_end', { ascending: false, nullsFirst: false }),
+      supabase.from('sources').select('id,title').order('title')
+    ])
+    if (entryResult.error) onMessage('Observatoires : ' + entryResult.error.message)
+    else setEntries((entryResult.data || []) as Entry[])
+    if (!sourceResult.error) setSources((sourceResult.data || []) as Source[])
+  }
+
+  useEffect(() => { void refresh() }, [])
+
+  function edit(item: Entry) {
+    setEditing(item.id)
+    setForm({
+      topic: item.topic, title: item.title, claim: item.claim, indicator: item.indicator || '',
+      value_label: item.value_label || '', unit: item.unit || '', period_start: item.period_start || '',
+      period_end: item.period_end || '', geography: item.geography || '', methodology: item.methodology,
+      limitations: item.limitations || '', verification_status: item.verification_status,
+      editorial_status: item.editorial_status
+    })
+    setOpen(true)
+  }
+
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    if (!supabase || !canEdit) return
+    setBusy(true)
+    const payload = {
+      ...form,
+      editorial_status: editing ? form.editorial_status : 'draft',
+      indicator: form.indicator || null, value_label: form.value_label || null,
+      unit: form.unit || null, period_start: form.period_start || null,
+      period_end: form.period_end || null, geography: form.geography || null,
+      limitations: form.limitations || null, updated_by: profileId,
+      updated_at: new Date().toISOString(), ...(editing ? {} : { created_by: profileId })
+    }
+    const result = editing
+      ? await supabase.from('observatory_entries').update(payload).eq('id', editing).select('id').single()
+      : await supabase.from('observatory_entries').insert(payload).select('id').single()
+    if (result.error) {
+      onMessage('Enregistrement observatoire : ' + result.error.message)
+      setBusy(false)
+      return
+    }
+    if (sourceId) {
+      const { error } = await supabase.from('observatory_sources').upsert({ entry_id: result.data.id, source_id: sourceId })
+      if (error) onMessage('Entrée enregistrée, mais lien source impossible : ' + error.message)
+    }
+    onMessage('Indicateur enregistré.')
+    setBusy(false)
+    setOpen(false)
+    setEditing(null)
+    setSourceId('')
+    setForm({ ...blank })
+    await refresh()
+  }
+
+  async function publish(item: Entry) {
+    if (!supabase || !canEdit) return
+    const { data: links, error: linkError } = await supabase.from('observatory_sources').select('source_id').eq('entry_id', item.id)
+    if (linkError || !links?.length) {
+      onMessage('Publication refusée : associe au moins une source vérifiable à cet indicateur.')
+      return
+    }
+    const { error } = await supabase.from('observatory_entries').update({
+      editorial_status: 'published', updated_by: profileId
+    }).eq('id', item.id)
+    onMessage(error ? 'Publication impossible : ' + error.message : 'Indicateur publié.')
+    if (!error) await refresh()
+  }
+
+  return (
+    <div>
+      <section className="admin-panel">
+        <div className="panel-heading">
+          <div><span className="admin-kicker">OBSERVATOIRES THÉMATIQUES</span><h2>Indicateurs documentés</h2></div>
+          {canEdit && <button className="primary" onClick={() => {
+            setEditing(null); setForm({ ...blank }); setSourceId(''); setOpen(true)
+          }}><Plus size={15}/> AJOUTER</button>}
+        </div>
+        <p className="security-note">Chaque indicateur doit exposer sa période, son périmètre, sa méthode, ses limites et son niveau de vérification. Aucune valeur estimée ne doit être présentée comme un fait brut.</p>
+        {topics.map(topic => {
+          const group = entries.filter(item => item.topic === topic.key)
+          return (
+            <div className="observatory-group" key={topic.key}>
+              <h3><Activity size={15}/>{topic.label}</h3>
+              {group.map(item => (
+                <article className="observatory-entry" key={item.id}>
+                  <div className="data-row">
+                    <div>
+                      <b>{item.title}</b>
+                      <small>{item.indicator || item.claim} · {item.geography || 'Périmètre non précisé'} · {item.period_start || '—'} → {item.period_end || '—'}</small>
+                    </div>
+                    <span className={'status-pill ' + item.editorial_status}>{item.editorial_status === 'published' ? 'Publié' : 'Brouillon'}</span>
+                    {canEdit && <button className="icon-button" onClick={() => edit(item)}><Pencil size={15}/></button>}
+                    {canEdit && item.editorial_status !== 'published' && <button className="primary" onClick={() => void publish(item)}>Publier</button>}
+                  </div>
+                  <p>{item.claim}</p>
+                  <p className="observatory-method"><b>Méthode :</b> {item.methodology}</p>
+                  {item.limitations && <p className="observatory-method"><b>Limites :</b> {item.limitations}</p>}
+                  <small>{item.value_label || 'Valeur non renseignée'} {item.unit || ''} · {item.verification_status}</small>
+                </article>
+              ))}
+              {group.length === 0 && <p className="empty-state">Aucun indicateur enregistré.</p>}
+            </div>
+          )
+        })}
+      </section>
+      {open && (
+        <div className="modal-backdrop">
+          <section className="editor-modal">
+            <div className="panel-heading">
+              <h2>{editing ? 'Modifier un indicateur' : 'Nouvel indicateur'}</h2>
+              <button className="icon-button" onClick={() => setOpen(false)}>✕</button>
+            </div>
+            <form onSubmit={save}>
+              <div className="form-grid">
+                <label>OBSERVATOIRE
+                  <select value={form.topic} onChange={e => setForm({ ...form, topic: e.target.value })}>
+                    {topics.map(topic => <option key={topic.key} value={topic.key}>{topic.label}</option>)}
+                  </select>
+                </label>
+                <label>STATUT ÉDITORIAL
+                  <select value={form.editorial_status} onChange={e => setForm({ ...form, editorial_status: e.target.value })}>
+                    <option value="draft">Brouillon</option>
+                    <option value="review">À relire</option>
+                    {editing && form.editorial_status === 'published' && <option value="published" disabled>Publié — utilisez le bouton de publication</option>}
+                  </select>
+                </label>
+              </div>
+              <label>TITRE<input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label>
+              <label>FAIT / AFFIRMATION DOCUMENTÉE<textarea required value={form.claim} onChange={e => setForm({ ...form, claim: e.target.value })}/></label>
+              <div className="form-grid">
+                <label>INDICATEUR<input value={form.indicator} onChange={e => setForm({ ...form, indicator: e.target.value })}/></label>
+                <label>VALEUR AFFICHÉE<input value={form.value_label} onChange={e => setForm({ ...form, value_label: e.target.value })} placeholder="Ex. 124 signalements"/></label>
+                <label>UNITÉ<input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}/></label>
+                <label>TERRITOIRE / PÉRIMÈTRE<input value={form.geography} onChange={e => setForm({ ...form, geography: e.target.value })}/></label>
+                <label>PÉRIODE — DÉBUT<input type="date" value={form.period_start} onChange={e => setForm({ ...form, period_start: e.target.value })}/></label>
+                <label>PÉRIODE — FIN<input type="date" value={form.period_end} onChange={e => setForm({ ...form, period_end: e.target.value })}/></label>
+              </div>
+              <label>MÉTHODOLOGIE<input required value={form.methodology} onChange={e => setForm({ ...form, methodology: e.target.value })}/></label>
+              <label>LIMITES / PRÉCAUTIONS<textarea value={form.limitations} onChange={e => setForm({ ...form, limitations: e.target.value })}/></label>
+              <div className="form-grid">
+                <label>VÉRIFICATION
+                  <select value={form.verification_status} onChange={e => setForm({ ...form, verification_status: e.target.value })}>
+                    <option value="unverified">Non vérifié</option>
+                    <option value="single_source">Source unique</option>
+                    <option value="cross_checked">Recoupé</option>
+                    <option value="contested">Contesté</option>
+                    <option value="not_verifiable">Non vérifiable</option>
+                  </select>
+                </label>
+                <label>SOURCE ASSOCIÉE
+                  <select value={sourceId} onChange={e => setSourceId(e.target.value)}>
+                    <option value="">Aucune source liée</option>
+                    {sources.map(source => <option key={source.id} value={source.id}>{source.title}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="modal-actions">
+                <button type="button" onClick={() => setOpen(false)}>ANNULER</button>
+                <button className="primary" disabled={busy}>{busy ? 'ENREGISTREMENT…' : 'ENREGISTRER'}</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+    </div>
+  )
+}

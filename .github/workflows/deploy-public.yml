@@ -33,6 +33,8 @@ jobs:
         run: npm ci
 
       - name: Compiler le site public
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
         run: npm run build -w @2passions/public
 
       - name: Préparer GitHub Pages
