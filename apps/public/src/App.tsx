@@ -99,8 +99,9 @@ export default function App() {
   useEffect(() => {
     let alive = true
     async function load() {
-      if (!supabase) { setLoading(false); return }
-      const { data, error: queryError } = await supabase
+      const client = supabase
+      if (!client) { setLoading(false); return }
+      const { data, error: queryError } = await client
         .from('entities')
         .select('id,entity_type,title,summary,body,event_date,territory,region,department,city,verification_status,event_status,slug,created_at')
         .eq('editorial_status', 'published')
@@ -114,11 +115,11 @@ export default function App() {
       }
       const published = (data || []) as Item[]
       setItems(published)
-      const { data: mediaRows } = await supabase.rpc('published_media_for_entity')
+      const { data: mediaRows } = await client.rpc('published_media_for_entity')
       if (alive && mediaRows?.length) {
         const imageRows = mediaRows.filter((row: any) => row.media_type === 'image' && row.public_derivative_path)
         const signed = await Promise.all(imageRows.map(async (row: any) => {
-          const { data: signedData } = await supabase.storage.from('media-public').createSignedUrl(row.public_derivative_path, 3600)
+          const { data: signedData } = await client.storage.from('media-public').createSignedUrl(row.public_derivative_path, 3600)
           if (!signedData?.signedUrl) return null
           return {
             id: row.id, entity_id: row.entity_id, url: signedData.signedUrl,
