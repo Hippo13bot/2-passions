@@ -12,7 +12,7 @@
 - [ ] Appliquer et tester les migrations sur une instance de préproduction.
 - [x] Script d’intégration RLS pour les rôles et l’accès anonyme.
 - [ ] Exécuter les tests sur l’instance Supabase de préproduction.
-- [ ] Buckets Storage privés et dérivés publics validés.
+- [x] Buckets Storage privés et politiques de lecture conditionnelle des dérivés.
 
 ## Lot 2 — CMS éditorial
 - [x] CRUD initial des entités documentaires.
@@ -37,7 +37,7 @@
 - [x] Formulaire public de contribution protégé par Turnstile et file de modération.
 - [ ] Formulaires de signalement/retrait dédiés.
 - [x] Vérification anti-robot Turnstile côté serveur.
-- [ ] Limitation de débit complémentaire et procédure de retrait.
+- [x] Limitation de débit par empreinte IP (5 envois / 15 minutes).\n- [ ] Procédure de retrait et signalement dédiée.
 
 ## Lot 5 — Observatoires et données
 - [x] Quatre observatoires thématiques avec sources, méthode et limites.
