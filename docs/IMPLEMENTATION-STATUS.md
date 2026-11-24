@@ -9,7 +9,7 @@
 - Chronologie des événements avec statut annoncé, confirmé, reporté, annulé ou non confirmé.
 - Quatre observatoires avec source, méthode, période, périmètre, limites et statut de vérification.
 - Médiathèque avec originaux privés, dérivés privés, pixelisation manuelle et contrôles avant publication.
-- Contributions publiques via Edge Function Turnstile, limitation de cinq envois par empreinte IP sur quinze minutes et insertion privée.
+- Contributions publiques via Edge Function Turnstile, limitation de cinq envois par empreinte IP HMAC-SHA-256 sur quinze minutes et insertion privée.
 - Migrations 0002 et 0003 pour les rôles, Storage, observatoires, RPC publiques et audit.
 - Tests d’intégration RLS et vérification Deno de l’Edge Function.
 
