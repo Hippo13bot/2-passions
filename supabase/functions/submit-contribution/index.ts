@@ -39,6 +39,12 @@ Deno.serve(async (req:Request) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!projectUrl || !serviceKey) return json(503, { error:'server_not_configured' })
     const admin = createClient(projectUrl, serviceKey, { auth:{ persistSession:false, autoRefreshToken:false } })
+    const identity = ip || (typeof contact_email === 'string' ? contact_email.toLowerCase() : turnstileToken)
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity))
+    const keyHash = Array.from(new Uint8Array(digest)).map((byte:number)=>byte.toString(16).padStart(2,'0')).join('')
+    const { data: allowed, error: rateError } = await admin.rpc('consume_contribution_rate_limit', { p_key_hash:keyHash, p_limit:5, p_window_seconds:900 })
+    if (rateError) { console.error('Contribution rate limit failed', rateError.message); return json(503, { error:'rate_limit_unavailable' }) }
+    if (allowed !== true) return json(429, { error:'rate_limit_exceeded' })
     const { error } = await admin.from('contributions').insert({
       contribution_type: contribution_type.trim(),
       message: message.trim(),
