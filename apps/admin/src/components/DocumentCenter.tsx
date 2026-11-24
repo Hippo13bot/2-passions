@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { FileText, Upload, ExternalLink, Save } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
+declare global { interface Window { Tesseract?: { createWorker:(language:string)=>Promise<{recognize:(input:Blob)=>Promise<{data:{text:string}}>;terminate:()=>Promise<void>}> } } }
 type Source={id:string;title:string;file_name:string|null;mime_type:string|null;storage_path:string|null;extracted_text:string|null;abstract:string|null;extraction_status:string;created_at:string}
 const maxSize=50*1024*1024
 export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:string;canEdit:boolean;onMessage:(message:string)=>void}){
@@ -15,7 +16,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
  const [busy,setBusy]=useState(false)
  async function load(){if(!supabase)return;const {data,error}=await supabase.from('sources').select('id,title,file_name,mime_type,storage_path,extracted_text,abstract,extraction_status,created_at').not('storage_path','is',null).order('created_at',{ascending:false});if(error)onMessage(error.message);else setItems((data||[]) as Source[])}
  useEffect(()=>{void load()},[])
- async function upload(e:React.FormEvent){
+ async function upload(e:FormEvent){
   e.preventDefault();if(!supabase||!file||!canEdit)return
   if(file.size>maxSize){onMessage('Fichier trop volumineux : limite 50 Mo.');return}
   setBusy(true)
@@ -34,6 +35,19 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
   await supabase.from('source_documents').insert({source_id:data.id,storage_path:path,file_name:file.name,mime_type:file.type||'application/octet-stream',file_size:file.size,extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),created_by:profileId})
   setBusy(false);setFile(null);setTitle('');setPublisher('');setDate('');onMessage(isText?'Document importé et texte indexé.':'Document importé. Extraction OCR à effectuer avant de pouvoir exploiter son contenu textuel.');await load()
  }
+ async function runImageOcr(item:Source){
+  if(!supabase||!item.storage_path)return
+  setBusy(true);onMessage('Chargement du moteur OCR français dans le navigateur…')
+  try{
+   if(!window.Tesseract){await new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';script.onload=()=>resolve();script.onerror=()=>reject(new Error('Chargement de Tesseract impossible.'));document.head.appendChild(script)})}
+   const {data:signed,error}=await supabase.storage.from('source-documents').createSignedUrl(item.storage_path,300)
+   if(error||!signed?.signedUrl)throw new Error(error?.message||'Fichier inaccessible.')
+   const response=await fetch(signed.signedUrl);if(!response.ok)throw new Error('Téléchargement du document impossible.')
+   const blob=await response.blob();const worker=await window.Tesseract!.createWorker('fra')
+   try{const result=await worker.recognize(blob);setSelected(item);setText(result.data.text||'');onMessage('OCR terminé. Relis et corrige le texte avant de l’enregistrer.')}finally{await worker.terminate()}
+  }catch(error){onMessage('OCR impossible : '+(error instanceof Error?error.message:'erreur inconnue'))}
+  setBusy(false)
+ }
  async function editText(){
   if(!supabase||!selected)return
   setBusy(true)
@@ -48,7 +62,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
  }
  return <div className="document-layout">
   <section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">IMPORT DOCUMENTAIRE</span><h2>Ajouter un document</h2></div><FileText/></div>
-   <p className="document-note">PDF, images, textes et documents bureautiques acceptés jusqu'à 50 Mo. Les originaux restent dans un stockage privé et ne sont jamais publiés automatiquement.</p>
+   <p className="document-note">PDF, images, textes et documents bureautiques acceptés jusqu'à 50 Mo. Les images peuvent être lues par OCR dans le navigateur ; le texte doit être relu. Les PDF sont conservés et leur texte peut être collé dans l'éditeur. Les originaux restent privés.</p>
    <form onSubmit={upload}>
     <label>FICHIER<input type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.txt,.md,.csv,.html,.htm,.rtf,.doc,.docx,.pptx,.xlsx" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
     <label>TITRE DOCUMENTAIRE<input value={title} onChange={e=>setTitle(e.target.value)} placeholder={file?.name||'Titre du document'}/></label>
@@ -58,7 +72,7 @@ export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:
    </form>
   </section>
   <section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">FONDS DOCUMENTAIRE</span><h2>Documents importés</h2></div><span className="status-pill">{items.length} fichiers</span></div>
-   {items.map(item=><div className="data-row" key={item.id}><div><b>{item.title}</b><small>{item.file_name} · {item.mime_type} · {new Date(item.created_at).toLocaleDateString('fr-FR')}</small><small>{item.extraction_status==='extracted'?'Texte disponible':item.extraction_status==='needs_ocr'?'OCR nécessaire':'Texte à compléter'}</small></div><button className="icon-button" onClick={()=>{setSelected(item);setText(item.extracted_text||'')}} title="Modifier le texte extrait"><Save size={15}/></button><button className="icon-button" onClick={()=>void openFile(item)} title="Ouvrir le fichier"><ExternalLink size={15}/></button></div>)}
+   {items.map(item=><div className="data-row" key={item.id}><div><b>{item.title}</b><small>{item.file_name} · {item.mime_type} · {new Date(item.created_at).toLocaleDateString('fr-FR')}</small><small>{item.extraction_status==='extracted'?'Texte disponible':item.extraction_status==='needs_ocr'?'OCR nécessaire':'Texte à compléter'}</small></div>{item.mime_type?.startsWith('image/')&&<button className="icon-button" disabled={busy} onClick={()=>void runImageOcr(item)} title="Reconnaissance de texte par OCR"><span>OCR</span></button>}<button className="icon-button" onClick={()=>{setSelected(item);setText(item.extracted_text||'')}} title="Modifier le texte extrait"><Save size={15}/></button><button className="icon-button" onClick={()=>void openFile(item)} title="Ouvrir le fichier"><ExternalLink size={15}/></button></div>)}
    {!items.length&&<p className="empty-state">Aucun document importé.</p>}
   </section>
   {selected&&<section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">TEXTE INDEXÉ</span><h2>{selected.title}</h2></div><button className="icon-button" onClick={()=>setSelected(null)}>✕</button></div><p className="document-note">Tu peux coller ici le texte extrait d'un PDF scanné ou d'une image. Il sera conservé avec la source pour la recherche et les futures synthèses.</p><textarea className="document-textarea" rows={14} value={text} onChange={e=>setText(e.target.value)} placeholder="Texte intégral extrait du document…"/><button className="primary" disabled={busy} onClick={()=>void editText()}><Save size={15}/> ENREGISTRER LE TEXTE</button></section>}
