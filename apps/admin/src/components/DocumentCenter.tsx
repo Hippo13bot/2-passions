@@ -1,0 +1,66 @@
+import { useEffect, useState } from 'react'
+import { FileText, Upload, ExternalLink, Save } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+
+type Source={id:string;title:string;file_name:string|null;mime_type:string|null;storage_path:string|null;extracted_text:string|null;abstract:string|null;extraction_status:string;created_at:string}
+const maxSize=50*1024*1024
+export default function DocumentCenter({profileId,canEdit,onMessage}:{profileId:string;canEdit:boolean;onMessage:(message:string)=>void}){
+ const [items,setItems]=useState<Source[]>([])
+ const [file,setFile]=useState<File|null>(null)
+ const [title,setTitle]=useState('')
+ const [publisher,setPublisher]=useState('')
+ const [date,setDate]=useState('')
+ const [text,setText]=useState('')
+ const [selected,setSelected]=useState<Source|null>(null)
+ const [busy,setBusy]=useState(false)
+ async function load(){if(!supabase)return;const {data,error}=await supabase.from('sources').select('id,title,file_name,mime_type,storage_path,extracted_text,abstract,extraction_status,created_at').not('storage_path','is',null).order('created_at',{ascending:false});if(error)onMessage(error.message);else setItems((data||[]) as Source[])}
+ useEffect(()=>{void load()},[])
+ async function upload(e:React.FormEvent){
+  e.preventDefault();if(!supabase||!file||!canEdit)return
+  if(file.size>maxSize){onMessage('Fichier trop volumineux : limite 50 Mo.');return}
+  setBusy(true)
+  const path=`${profileId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`
+  const {error:storageError}=await supabase.storage.from('source-documents').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false})
+  if(storageError){setBusy(false);onMessage('Téléversement impossible : '+storageError.message);return}
+  const isText=file.type.startsWith('text/')||/\.(txt|md|csv|html?)$/i.test(file.name)
+  const extracted=isText?await file.text():''
+  const {data,error}=await supabase.from('sources').insert({
+   title:title||file.name,source_type:'document',publisher:publisher||null,published_on:date||null,
+   file_name:file.name,mime_type:file.type||'application/octet-stream',storage_path:path,
+   extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),
+   notes:'Document importé dans le centre documentaire.',created_by:profileId
+  }).select('id').single()
+  if(error){await supabase.storage.from('source-documents').remove([path]);setBusy(false);onMessage('Enregistrement de la source impossible : '+error.message);return}
+  await supabase.from('source_documents').insert({source_id:data.id,storage_path:path,file_name:file.name,mime_type:file.type||'application/octet-stream',file_size:file.size,extracted_text:extracted||null,extraction_status:isText?'extracted':(file.type.startsWith('image/')||file.type==='application/pdf'?'needs_ocr':'uploaded'),created_by:profileId})
+  setBusy(false);setFile(null);setTitle('');setPublisher('');setDate('');onMessage(isText?'Document importé et texte indexé.':'Document importé. Extraction OCR à effectuer avant de pouvoir exploiter son contenu textuel.');await load()
+ }
+ async function editText(){
+  if(!supabase||!selected)return
+  setBusy(true)
+  const {error}=await supabase.from('sources').update({extracted_text:text,extraction_status:text.trim()?'extracted':'uploaded'}).eq('id',selected.id)
+  if(!error)await supabase.from('source_documents').update({extracted_text:text,extraction_status:text.trim()?'extracted':'uploaded'}).eq('source_id',selected.id)
+  setBusy(false);if(error)onMessage(error.message);else{onMessage('Texte documentaire enregistré.');setSelected({...selected,extracted_text:text,extraction_status:text.trim()?'extracted':'uploaded'});await load()}
+ }
+ async function openFile(item:Source){
+  if(!supabase||!item.storage_path)return
+  const {data,error}=await supabase.storage.from('source-documents').createSignedUrl(item.storage_path,300)
+  if(error)onMessage(error.message);else window.open(data.signedUrl,'_blank','noopener,noreferrer')
+ }
+ return <div className="document-layout">
+  <section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">IMPORT DOCUMENTAIRE</span><h2>Ajouter un document</h2></div><FileText/></div>
+   <p className="document-note">PDF, images, textes et documents bureautiques acceptés jusqu'à 50 Mo. Les originaux restent dans un stockage privé et ne sont jamais publiés automatiquement.</p>
+   <form onSubmit={upload}>
+    <label>FICHIER<input type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.tif,.tiff,.txt,.md,.csv,.html,.htm,.rtf,.doc,.docx,.pptx,.xlsx" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
+    <label>TITRE DOCUMENTAIRE<input value={title} onChange={e=>setTitle(e.target.value)} placeholder={file?.name||'Titre du document'}/></label>
+    <div className="form-grid"><label>AUTEUR / ORGANISATION<input value={publisher} onChange={e=>setPublisher(e.target.value)}/></label><label>DATE DE PUBLICATION<input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label></div>
+    {file&&<p className="document-note">{file.name} · {(file.size/1024/1024).toFixed(2)} Mo · {file.type||'type inconnu'}</p>}
+    <button className="primary" disabled={busy||!file}><Upload size={15}/>{busy?'IMPORT…':'IMPORTER LE DOCUMENT'}</button>
+   </form>
+  </section>
+  <section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">FONDS DOCUMENTAIRE</span><h2>Documents importés</h2></div><span className="status-pill">{items.length} fichiers</span></div>
+   {items.map(item=><div className="data-row" key={item.id}><div><b>{item.title}</b><small>{item.file_name} · {item.mime_type} · {new Date(item.created_at).toLocaleDateString('fr-FR')}</small><small>{item.extraction_status==='extracted'?'Texte disponible':item.extraction_status==='needs_ocr'?'OCR nécessaire':'Texte à compléter'}</small></div><button className="icon-button" onClick={()=>{setSelected(item);setText(item.extracted_text||'')}} title="Modifier le texte extrait"><Save size={15}/></button><button className="icon-button" onClick={()=>void openFile(item)} title="Ouvrir le fichier"><ExternalLink size={15}/></button></div>)}
+   {!items.length&&<p className="empty-state">Aucun document importé.</p>}
+  </section>
+  {selected&&<section className="admin-panel"><div className="panel-heading"><div><span className="admin-kicker">TEXTE INDEXÉ</span><h2>{selected.title}</h2></div><button className="icon-button" onClick={()=>setSelected(null)}>✕</button></div><p className="document-note">Tu peux coller ici le texte extrait d'un PDF scanné ou d'une image. Il sera conservé avec la source pour la recherche et les futures synthèses.</p><textarea className="document-textarea" rows={14} value={text} onChange={e=>setText(e.target.value)} placeholder="Texte intégral extrait du document…"/><button className="primary" disabled={busy} onClick={()=>void editText()}><Save size={15}/> ENREGISTRER LE TEXTE</button></section>}
+ </div>
+}
