@@ -37,5 +37,5 @@ Faire vérifier le dispositif au regard du RGPD, du droit à l'image, du droit d
 ## Contributions publiques
 - L’insertion anonyme directe dans `public.contributions` est désactivée par la migration 0003.
 - L’Edge Function vérifie Cloudflare Turnstile avant insertion et limite les envois à cinq par empreinte IP sur quinze minutes.
-- Seule l’empreinte SHA-256 est conservée dans `contribution_rate_limits`, pas l’adresse IP brute.
+- Seule l’empreinte HMAC-SHA-256 est conservée dans `contribution_rate_limits`, pas l’adresse IP brute.
 - La table et la fonction de limitation sont réservées au rôle serveur `service_role` ; aucun accès n’est accordé à `anon` ou `authenticated`.
