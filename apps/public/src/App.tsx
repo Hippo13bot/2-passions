@@ -250,7 +250,7 @@ export default function App() {
     <h1>{item.title}</h1>
     <div className="dossier-meta"><span><CalendarDays size={15}/>{dateLabel(item.event_date)}</span><Status value={item.verification_status}/>{item.event_status && <span className="event-status">{eventStatuses[item.event_status] || item.event_status}</span>}</div>
     {mediaByEntity[item.id]?.length ? <div className="dossier-gallery">
-      {mediaByEntity[item.id].map((media) => <ImageFrame key={media.id} media={media}/>)}
+      {mediaByEntity[item.id].slice(0, 8).map((media) => <ImageFrame key={media.id} media={media}/>)}
     </div> : null}
     {item.summary && <p className="dossier-summary">{item.summary}</p>}
     <div className="dossier-layout">
@@ -283,9 +283,8 @@ export default function App() {
           <div className="home-hero-foot"><span>ARCHIVES PUBLIQUES</span><span>FRANCE · MÉTROPOLE & OUTRE-MER</span></div>
         </div>
         <div className="home-hero-visual">
-          <ImageFrame media={featuredMedia} className="hero-photo"/>
+          {featuredMedia ? <ImageFrame media={featuredMedia} className="hero-photo"/> : <div className="hero-visual-note"><span>2P / ARCHIVES</span><b>LES TRACES<br/>RESTENT.</b><small>{featured ? 'Les photographies validées de ce dossier apparaîtront ici.' : 'Les photographies publiées apparaîtront ici automatiquement.'}</small></div>}
           {featured && <button className="hero-feature-caption" onClick={() => openItem(featured)}><span>À LA UNE · {labels[featured.entity_type] || featured.entity_type}</span><b>{featured.title}</b><small>Lire le dossier <ArrowUpRight size={14}/></small></button>}
-          {!featured && <div className="hero-visual-note"><span>2P / ARCHIVES</span><b>LES TRACES<br/>RESTENT.</b><small>Les photographies publiées apparaîtront ici automatiquement.</small></div>}
         </div>
       </section>
       <section className="home-manifesto">
