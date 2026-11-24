@@ -8,6 +8,7 @@ alter table public.media_assets add column if not exists file_name text;
 alter table public.media_assets add column if not exists mime_type text;
 alter table public.media_assets add column if not exists file_size bigint;
 alter table public.media_assets add column if not exists rights_notes text;
+alter table public.media_assets add column if not exists uploaded_by uuid references public.profiles(id);
 alter table public.media_assets add column if not exists reviewed_by uuid references public.profiles(id);
 alter table public.media_assets add column if not exists reviewed_at timestamptz;
 
